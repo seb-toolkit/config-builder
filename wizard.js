@@ -47,7 +47,7 @@ function saveSetup(name) {
 function useSetup(name) {
   const s = loadSetups()[name];
   if (!s) return false;
-  loadDict(fromJsonable(s.values));
+  loadDict(fromJsonable(s.values));   // also marks the summary as ready
   setStatus(`Loaded the setup “${name}”. Passwords are not saved in setups, so set them again if needed.`, 'ok');
   return true;
 }
@@ -64,11 +64,38 @@ function brokerEntry(exe) {
     title: '', description: '', executable: exe, originalName: '', windowHandlingProcess: '', path: '', identifier: '', arguments: [], signature: '' };
 }
 
+/* ---------------- Situation templates ---------------- */
+// Each template pre-fills the wizard's answers. `answers` only lists what differs from the plain defaults;
+// `assumptions` is the plain-language list shown to the user, and must match what `answers` really sets.
+const TEMPLATES = [
+  { id: 'closed', title: 'Closed-book Moodle quiz', blurb: 'A supervised or locked-down quiz where students may only use the quiz.',
+    assumptions: ['Students use Windows or Mac laptops.', 'Students can only open the quiz site (and sign-in pages if you choose that later).', 'SEB fills the screen.', 'Leaving SEB needs a password that you give out.',
+      'Copy and paste works inside the exam only.', 'No printing, no spell checker, no browser back and forward.', 'Moodle checks that students used this exact file.'],
+    answers: { sites: 'quiz', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: false, uploads: false, sendKey: true, quitMode: 'password' } },
+  { id: 'closed-ms', title: 'Closed-book quiz with Microsoft sign-in', blurb: 'As above, and students log in with a university Microsoft account and two-step verification.',
+    assumptions: ['Everything in the closed-book quiz.', 'Students sign in with Microsoft and approve on their phone (Authenticator app or text).', 'The Microsoft sign-in websites are allowed.',
+      'Windows Hello, passkeys and security keys are not used. They are unreliable in SEB (the next steps explain).'],
+    answers: { sites: 'quiz', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: false, uploads: false, sendKey: true, quitMode: 'password', ms: 'phone' } },
+  { id: 'practice', title: 'Practice or low-stakes quiz', blurb: 'Relaxed settings for a formative quiz.',
+    assumptions: ['Students can quit SEB whenever they like, with no password.', 'SEB opens in a window rather than full screen.', 'Students can use the spell checker and the back and forward buttons.',
+      'Only the quiz site can be opened.', 'Moodle does not check the settings file.'],
+    answers: { sites: 'quiz', fullScreen: false, clipboard: 'seb', spell: true, print: false, backForward: true, downloads: false, uploads: false, sendKey: false, quitMode: 'free' } },
+  { id: 'openbook', title: 'Open-book exam (any website)', blurb: 'Students may look things up on the web, but only inside SEB.',
+    assumptions: ['Students can open any website inside SEB.', 'SEB fills the screen and leaving needs a password.', 'Copy and paste works inside SEB only, so students can copy from a web page into an answer.',
+      'Other programs on the computer are still blocked.', 'Moodle checks that students used this exact file.'],
+    answers: { sites: 'any', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: true, downloads: false, uploads: false, sendKey: true, quitMode: 'password' } },
+  { id: 'upload', title: 'Quiz with file-upload questions', blurb: 'Students must attach a file to an answer.',
+    assumptions: ['Students can upload files, for example a screenshot or a document.', 'Downloads stay switched off.', 'Only the quiz site can be opened.', 'SEB fills the screen and leaving needs a password.',
+      'Moodle checks that students used this exact file.'],
+    answers: { sites: 'quiz', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: false, uploads: true, sendKey: true, quitMode: 'password' } }
+];
+
 /* ---------------- The wizard ---------------- */
 function wzAnswersFromState() {
   const v = state.values;
   let host = ''; try { host = new URL(v.startURL).host; } catch {}
-  const others = (v.URLFilterRules || []).filter(r => r.action === 1 && !r.regex && r.expression && r.expression !== host).map(r => r.expression);
+  const hasMsDomain = (v.URLFilterRules || []).some(r => r.action === 1 && MS_DOMAINS.includes(r.expression));
+  const others = (v.URLFilterRules || []).filter(r => r.action === 1 && !r.regex && r.expression && r.expression !== host && !MS_DOMAINS.includes(r.expression)).map(r => r.expression);
   const passwordSet = !!(v.hashedQuitPassword || state.newPasswords.hashedQuitPassword);
   return {
     startURL: v.startURL || '',
@@ -83,7 +110,7 @@ function wzAnswersFromState() {
     clipboard: v.clipboardPolicy === 1 ? 'block' : v.clipboardPolicy === 0 ? 'allow' : 'seb',
     spell: !!v.allowSpellCheck, print: !!v.allowPrint, backForward: !!v.allowBrowsingBackForward,
     downloads: !!v.allowDownloads, uploads: !!v.allowUploads,
-    ms: (v.permittedProcesses || []).some(p => p && p.active && MS_BROKERS.includes(p.executable)) ? 'hello' : 'no',
+    ms: (v.permittedProcesses || []).some(p => p && p.active && MS_BROKERS.includes(p.executable)) ? 'hello' : hasMsDomain ? 'phone' : 'no',
     sendKey: !!v.sendBrowserExamKey,
     saveName: ''
   };
@@ -144,13 +171,36 @@ function wzCheck(label, help, checked, onChange) {
   return el('label', { class: 'wz-opt' }, inp, el('span', {}, el('b', {}, label), help ? el('span', { class: 'wz-help' }, help) : null));
 }
 
-function openWizard() {
+function wzSummaryRows(a) {
+      const yn = x => x ? 'Yes' : 'No';
+  const rows = [
+        ['Exam address', a.startURL.trim()],
+        ['Leaving SEB', a.quitMode === 'password' ? (a.quitPassword || a.passwordAlreadySet ? 'With a password' : 'With a password (not set)') : 'Anyone can quit'],
+        ['Quit link', a.quitURL.trim() || 'None'],
+        ['Websites', a.sites === 'quiz' ? 'Only the exam’s own site' : a.sites === 'any' ? 'Any website' : 'The exam site and ' + (a.otherSites.split(/\r?\n/).filter(s => s.trim()).length) + ' other'],
+        ['Microsoft sign-in', a.ms === 'hello' ? 'Windows Hello, PIN, passkey or key (programs permitted)' : a.ms === 'phone' ? 'Approval on phone' : 'None'],
+        ['Screen', a.fullScreen ? 'Full screen' : 'Window'],
+        ['Copy and paste', a.clipboard === 'seb' ? 'Only inside the exam' : a.clipboard === 'block' ? 'Blocked' : 'Allowed everywhere'],
+        ['Spell check / print / back-forward', [yn(a.spell), yn(a.print), yn(a.backForward)].join(' / ')],
+        ['Downloads / uploads', yn(a.downloads) + ' / ' + yn(a.uploads)],
+        ['Moodle checks the settings', yn(a.sendKey)]];
+  return rows;
+}
+
+function openWizard(templateId) {
+  const tpl = typeof templateId === 'string' ? TEMPLATES.find(t => t.id === templateId) : null;
   let a = wzAnswersFromState();
-  const setups = Object.keys(loadSetups()).sort();
+  if (tpl) a = Object.assign(a, tpl.answers);
+  const setups = tpl ? [] : Object.keys(loadSetups()).sort();
   let base = '';      // '' = the settings currently in the builder, otherwise the name of a saved setup
   let step = 0;
 
   const steps = [];
+  if (tpl) steps.push({
+    title: tpl.title,
+    body: () => [el('p', { class: 'wz-q' }, tpl.blurb), el('h4', {}, 'This starting point assumes:'), el('ul', { class: 'wz-assume' }, tpl.assumptions.map(x => el('li', {}, x))),
+      el('p', { class: 'wz-help' }, 'You will see each of these choices in the next steps and can change any of them. You will also add your exam’s address and a quit password.')]
+  });
   if (setups.length) steps.push({
     title: 'Where do you want to start?',
     body: () => {
@@ -253,18 +303,7 @@ function openWizard() {
   steps.push({
     title: 'Check your choices',
     body: () => {
-      const yn = x => x ? 'Yes' : 'No';
-      const rows = [
-        ['Exam address', a.startURL.trim()],
-        ['Leaving SEB', a.quitMode === 'password' ? (a.quitPassword || a.passwordAlreadySet ? 'With a password' : 'With a password (not set)') : 'Anyone can quit'],
-        ['Quit link', a.quitURL.trim() || 'None'],
-        ['Websites', a.sites === 'quiz' ? 'Only the exam’s own site' : a.sites === 'any' ? 'Any website' : 'The exam site and ' + (a.otherSites.split(/\r?\n/).filter(s => s.trim()).length) + ' other'],
-        ['Microsoft sign-in', a.ms === 'hello' ? 'Windows Hello, PIN, passkey or key (programs permitted)' : a.ms === 'phone' ? 'Approval on phone' : 'None'],
-        ['Screen', a.fullScreen ? 'Full screen' : 'Window'],
-        ['Copy and paste', a.clipboard === 'seb' ? 'Only inside the exam' : a.clipboard === 'block' ? 'Blocked' : 'Allowed everywhere'],
-        ['Spell check / print / back-forward', [yn(a.spell), yn(a.print), yn(a.backForward)].join(' / ')],
-        ['Downloads / uploads', yn(a.downloads) + ' / ' + yn(a.uploads)],
-        ['Moodle checks the settings', yn(a.sendKey)]];
+      const rows = wzSummaryRows(a);
       const tbl = el('table', {}, el('tbody', {}, rows.map(([k, v]) => el('tr', {}, el('th', {}, k), el('td', {}, v)))));
       const name = el('input', { type: 'text', value: a.saveName, placeholder: 'e.g. Year 2 Moodle quiz', 'aria-label': 'Setup name' });
       name.addEventListener('input', () => { a.saveName = name.value; });
@@ -309,6 +348,7 @@ function openWizard() {
     const msg = steps.slice(1).map(s => s.check && s.check()).find(Boolean);
     if (msg) { err.textContent = msg; err.hidden = false; return; }
     wzApply(a);
+    window.simpleReady = true; render();
     if (a.saveName.trim()) {
       const bad = saveSetup(a.saveName);
       if (bad) setStatus(bad, 'err'); else if (window.drawSetups) window.drawSetups();
@@ -327,10 +367,15 @@ function openWizard() {
 
 /* ---------------- The "Set up" section ---------------- */
 function renderStart(sec) {
-  sec.append(el('p', { class: 'intro' }, 'New to this? Answer a few plain questions and the builder fills in the settings for you. Or start from a setup you saved earlier. You can still change anything afterwards.'));
-  sec.append(el('div', { class: 'row-actions' }, el('button', { class: 'primary', type: 'button', onclick: openWizard }, 'Set up with questions')));
+  sec.append(el('p', { class: 'intro' }, 'Pick the situation closest to yours. You will see what it assumes, then answer a few plain questions to adjust it. You can change your answers afterwards.'));
+  sec.append(el('h3', {}, 'What are you setting up?'));
+  sec.append(el('div', { class: 'tpl-grid' }, TEMPLATES.map(t => el('button', { class: 'tpl', type: 'button', onclick: () => openWizard(t.id) },
+    el('b', {}, t.title), el('span', {}, t.blurb)))));
+  sec.append(el('div', { class: 'row-actions' },
+    el('button', { type: 'button', onclick: () => openWizard() }, 'None of these: answer all the questions'),
+    el('button', { type: 'button', onclick: () => $('#fileInput').click() }, 'Open a .seb file I already have')));
 
-  sec.append(el('h3', {}, 'Saved setups'));
+  sec.append(el('h3', {}, 'Your saved setups'));
   const list = el('div');
   const msg = el('div');
   const nameIn = el('input', { type: 'text', placeholder: 'Name for the current settings', 'aria-label': 'Setup name' });
@@ -347,16 +392,18 @@ function renderStart(sec) {
   };
   window.drawSetups = draw;
   sec.append(list);
-  sec.append(el('div', { class: 'row-actions' }, nameIn,
+  const more = el('details', {}, el('summary', {}, 'Save these settings, or move setups to another computer'));
+  sec.append(more);
+  more.append(el('div', { class: 'row-actions' }, nameIn,
     el('button', { type: 'button', onclick: () => {
       const n = nameIn.value.trim();
       if (n && loadSetups()[n] && !confirm(`Replace the setup “${n}”?`)) return;
       const bad = saveSetup(nameIn.value);
       msg.replaceChildren(el('div', { class: 'note ' + (bad ? 'err' : 'ok') }, bad || `Saved “${n}”.`)); nameIn.value = ''; draw();
     } }, 'Save current settings')));
-  sec.append(msg);
-  sec.append(el('p', { class: 'intro' }, 'Setups are saved in this browser on this computer, and include everything you changed except passwords, which you set again each time. To move setups to another computer, export them and import them there.'));
-  sec.append(el('div', { class: 'row-actions' },
+  more.append(msg);
+  more.append(el('p', { class: 'intro' }, 'Setups are saved in this browser on this computer, and include everything you changed except passwords, which you set again each time. To move setups to another computer, export them and import them there.'));
+  more.append(el('div', { class: 'row-actions' },
     el('button', { type: 'button', onclick: () => {
       const all = loadSetups();
       if (!Object.keys(all).length) { msg.replaceChildren(el('div', { class: 'note warn' }, 'Nothing to export yet.')); return; }
@@ -375,4 +422,22 @@ function renderStart(sec) {
     fileIn.value = '';
   });
   draw();
+}
+
+/* ---------------- The "Your setup" summary (simple view) ---------------- */
+function renderSummary(sec) {
+  if (!window.simpleReady) { sec.classList.add('nosummary'); return; }
+  const a = wzAnswersFromState();
+  const rows = wzSummaryRows(a).filter(r => r[0] !== 'Exam address' || r[1]);
+  sec.append(el('p', { class: 'intro' }, 'This is what the file will do. Anything not listed is left at the usual settings.'),
+    el('table', { class: 'summary-table' }, el('tbody', {}, rows.map(([k, v]) => el('tr', {}, el('th', {}, k), el('td', {}, v))))));
+  sec.append(el('div', { class: 'row-actions' },
+    el('button', { class: 'primary bigbtn', type: 'button', onclick: () => $('#btnDownload').click() }, 'Download the .seb file'),
+    el('button', { type: 'button', onclick: () => openWizard() }, 'Change my answers'),
+    el('button', { type: 'button', onclick: () => setView(false, '#test') }, 'Check which websites the exam uses')));
+  sec.append(el('h3', {}, 'What next?'),
+    el('ol', { class: 'next-steps' },
+      el('li', {}, 'In Moodle, open the quiz settings → ', el('i', {}, 'Safe Exam Browser'), ' → “Require the use of Safe Exam Browser: Yes – Upload my own config”, and upload the file.'),
+      el('li', {}, 'Try the quiz yourself in SEB on a Windows computer and a Mac before the exam.'),
+      el('li', {}, 'Want to change a detail the questions did not cover? Use “I know SEB: show all settings” at the top.')));
 }

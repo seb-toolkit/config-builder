@@ -7,6 +7,8 @@
 
 A web page that makes Safe Exam Browser `.seb` files for SEB on Windows, macOS and iOS. A single file serves every platform.
 
+- **Situation templates.** Start from a built-in case (closed-book Moodle quiz, with Microsoft sign-in, practice quiz, open-book, file upload). Each lists what it assumes in plain words and pre-fills the questions.
+- **Simple view first.** The page opens with just two choices (answer a few questions, or open an existing file), then a short summary with a download button. Every setting is still there behind “I know SEB: show all settings”.
 - **Setup questions and saved setups.** A short wizard asks plain questions (exam address, how students quit, which sites, what they can do) and fills in the settings. Any set of settings can be saved under a name in the browser and reused for the next exam; setups can be exported and imported. Passwords are never saved.
 - **Every setting.** All 367 root keys from both official config tools and clients are editable. They are grouped and searchable, with the official labels and help text and each platform's defaults. Common settings get friendly sections at the top.
 - **Same format as SEB.** Files can be plain, password-protected (`pswd`) or client-configuration (`pwcc`). Passwords are stored as SHA-256 hashes. Existing `.seb` files can be opened, edited and saved again.
@@ -42,7 +44,7 @@ The monitor uses a separate window rather than an iframe. Moodle and most single
 |---|---|
 | `index.html` | The builder UI |
 | `seb-core.js` | `.seb` read/write: gzip, `plnd`/`pswd`/`pwcc`, RNCryptor (AES-256-CBC + HMAC-SHA256, PBKDF2-SHA1 10k), XML plist |
-| `wizard.js` | The setup questions and saved setups (browser storage; only values that differ from the defaults are kept, never passwords) |
+| `wizard.js` | The templates, setup questions and saved setups (browser storage; only values that differ from the defaults are kept, never passwords) |
 | `harimport.js` | Reads HAR files and URL lists for the URL filter test |
 | `sebfilter.js` | SEB URL filter rules, ported from SEB for Windows (also copied into `extension/`) |
 | `keys.js` | Generated settings catalogue (keys, types, defaults per tool, labels, help, which clients read each key, default process lists) |

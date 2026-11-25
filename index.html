@@ -94,6 +94,21 @@
   .wz-foot { justify-content: flex-end; margin-top: 16px; }
   .wz-body table { width: 100%; }
   .wz-body th { text-align: left; font-weight: 500; color: var(--muted); padding-right: 14px; width: 40%; }
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 8px 0 12px; }
+  button.tpl { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; padding: 12px 14px; font: inherit; }
+  button.tpl b { font-weight: 600; }
+  button.tpl span { font-size: 13px; color: var(--muted); }
+  .wz-assume { margin: 4px 0 8px; padding-left: 20px; }
+  .viewtoggle { margin-top: 6px; font-size: 14px; }
+  body.simple nav, body.simple #btnXml { display: none; }
+  body.simple:not(.ready) .bar { display: none; }
+  #main > section.nosummary { display: none !important; }
+  body.simple .layout { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+  body.simple #main > section:not(#start):not(#summary) { display: none !important; }
+  .bigbtn { padding: 12px 20px; font-size: 16px; }
+  .summary-table { width: 100%; margin: 8px 0; }
+  .summary-table th { text-align: left; font-weight: 500; color: var(--muted); padding-right: 14px; width: 34%; }
+  .next-steps { margin: 6px 0 0; padding-left: 20px; }
   .note { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin: 8px 0; }
   .note.warn { background: var(--warn-bg); color: var(--warn-ink); }
   .note.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -120,7 +135,8 @@
 <body>
 <header>
   <h1>Safe Exam Browser config builder</h1>
-  <p>Makes one <code>.seb</code> file that works in SEB for Windows and SEB for macOS (and iOS), with every setting both official config tools offer. Everything runs in this page; nothing is uploaded.</p>
+  <p>Answer a few questions and get a <code>.seb</code> file for Safe Exam Browser, for Windows, Mac and iPad. Everything stays in this page; nothing is uploaded.</p>
+  <p class="viewtoggle"><a href="#" id="viewToggle"></a></p>
 </header>
 
 <div class="layout">
@@ -196,6 +212,7 @@ const BADGE_TITLE = { both: 'Read by SEB for Windows and macOS', win: 'Read by S
    or the two tools disagree (see SEB-ANALYSIS.md). */
 const SECTIONS = [
   { id: 'start', title: 'Set up', custom: 'start' },
+  { id: 'summary', title: 'Your setup', custom: 'summary' },
   { id: 'help', title: 'How to use', custom: 'help' },
   { id: 'exam', title: 'Exam', fields: [
     { k: 'startURL', d: '', wide: true, label: 'Start URL', help: 'The page SEB opens first, for example the Moodle quiz URL.', ph: 'https://moodle.example.ac.uk/mod/quiz/view.php?id=123' },
@@ -535,6 +552,7 @@ function render() {
     nav.insertBefore(el('a', { href: '#' + s.id }, s.title), sep);
     const sec = el('section', { id: s.id, 'data-p': s.plat || 'both' }, el('h2', {}, s.title, s.plat ? badge(s.plat) : null));
     if (s.custom === 'start') renderStart(sec);
+    else if (s.custom === 'summary') renderSummary(sec);
     else if (s.custom === 'help') renderHelp(sec);
     else if (s.custom === 'filter') renderFilter(sec);
     else if (s.custom === 'test') renderTest(sec);
@@ -545,6 +563,7 @@ function render() {
     main.append(sec);
   }
   applyPlatformFilter();
+  document.body.classList.toggle('ready', !!window.simpleReady);
 }
 
 function renderHelp(sec) {
@@ -969,7 +988,7 @@ $('#btnXml').addEventListener('click', async () => {
 });
 $('#btnXmlClose').addEventListener('click', () => $('#xmlDialog').close());
 $('#btnXmlDownload').addEventListener('click', () => download(new TextEncoder().encode(lastXml), fileName().replace(/\.seb$/, '.xml'), 'application/xml'));
-$('#btnReset').addEventListener('click', () => { if (confirm('Discard all changes and start from the defaults?')) { resetState(); render(); changed(); } });
+$('#btnReset').addEventListener('click', () => { if (confirm('Discard all changes and start from the defaults?')) { window.simpleReady = false; resetState(); render(); changed(); } });
 
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', async e => {
@@ -1024,12 +1043,22 @@ function loadDict(dict, password) {
   state.values.prohibitedProcesses = a.concat(b);
   state.userProcStart = a.length;
   state.filePassword = password || '';
+  window.simpleReady = true;
   render(); changed();
   const n = Object.keys(state.extra).length;
   setStatus(`Opened.${n ? ` ${n} unknown setting${n > 1 ? 's' : ''} kept unchanged.` : ''}${typeWarnings ? ` ${typeWarnings} had an unexpected type and were kept as they were.` : ''}`, 'ok');
 }
 
+// Simple view (default) shows only the start card and a summary; "Show all settings" reveals everything.
+function setView(simple, scrollTo) {
+  document.body.classList.toggle('simple', simple);
+  $('#viewToggle').textContent = simple ? 'I know SEB: show all settings' : 'Back to the simple view';
+  try { localStorage.setItem('seb-config-builder-view', simple ? 'simple' : 'all'); } catch {}
+  if (scrollTo) { const t = $(scrollTo); if (t) t.scrollIntoView(); }
+}
+$('#viewToggle').addEventListener('click', e => { e.preventDefault(); setView(!document.body.classList.contains('simple')); });
 render(); changed();
+setView((() => { try { return localStorage.getItem('seb-config-builder-view') !== 'all'; } catch { return true; } })());
 </script>
 </body>
 </html>
