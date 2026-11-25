@@ -76,6 +76,8 @@
   .scroll { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
   .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
   .row-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .dropzone { border: 2px dashed var(--border, #b8c0cc); border-radius: 8px; padding: 18px; text-align: center; color: var(--muted); cursor: pointer; margin: 8px 0; }
+  .dropzone:hover, .dropzone.over, .dropzone:focus { border-color: var(--accent); outline: none; background: rgba(0,0,0,.03); }
   .note { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin: 8px 0; }
   .note.warn { background: var(--warn-bg); color: var(--warn-ink); }
   .note.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -148,6 +150,7 @@
 
 <script src="seb-core.js"></script>
 <script src="sebfilter.js"></script>
+<script src="harimport.js"></script>
 <script src="keys.js"></script>
 <script>
 'use strict';
@@ -633,12 +636,46 @@ function renderTest(sec) {
   const enforce = el('input', { type: 'checkbox', checked: monitor.enforce });
 
   sec.append(el('p', { class: 'intro' },
-    'Opens the start URL in a separate Chrome window and records every address it loads while you work through the exam. ',
-    'Each request is checked against your rules with the same matching code as SEB for Windows (ported and tested against its unit tests). ',
-    'Nothing leaves your computer.'));
+    'Records which addresses an exam loads and checks each one against your rules, with the same matching code as SEB for Windows (ported and tested against its unit tests). ',
+    'You can import a recording from your browser (no install), or use the extension to test live. Nothing leaves your computer.'));
   sec.append(status);
 
-  const setupHelp = el('details', {}, el('summary', {}, 'Install the SEB URL Monitor extension (one-time, Chrome or Edge)'),
+  // ---- Import a HAR file or list of URLs (no extension needed) ----
+  const importMsg = el('div');
+  const fileIn = el('input', { type: 'file', accept: '.har,.json,.txt,.csv,text/plain,application/json', style: 'display:none' });
+  const drop = el('div', { class: 'dropzone', tabindex: 0, role: 'button' }, 'Drop a HAR file or text file of URLs here, or click to choose one');
+  const pasteBox = el('textarea', { spellcheck: 'false', placeholder: 'Or paste addresses here, one per line (DevTools: right-click in the Network list, Copy, Copy all URLs)', 'aria-label': 'URLs to test' });
+  const pasteBtn = el('button', { type: 'button' }, 'Check pasted addresses');
+  function importText(text, name) {
+    let r;
+    try { r = HARImport.parseAny(text); } catch (e) { importMsg.replaceChildren(el('div', { class: 'note err' }, e.message)); return; }
+    if (!r.requests.length) { importMsg.replaceChildren(el('div', { class: 'note warn' }, `No web addresses found${name ? ' in ' + name : ''}.`)); return; }
+    const base = 'imp' + Date.now() + '_';
+    r.requests.forEach((q, i) => monitor.log.set(base + i + ':' + q.url, { ...q, id: base + i }));
+    importMsg.replaceChildren(el('div', { class: 'note ok' }, `Added ${r.requests.length} ${r.kind === 'HAR' ? 'requests from the HAR file' : 'addresses'}` +
+      (r.skipped ? ` (${r.skipped} skipped: not web addresses)` : '') + '.' +
+      (r.kind === 'URL list' ? ' A list has no request types, so each address is checked as if it were a page, the strictest case.' : '')));
+    monitor.redraw();
+  }
+  async function importFiles(files) { for (const f of files) importText(await f.text(), f.name); }
+  drop.addEventListener('click', () => fileIn.click());
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileIn.click(); } });
+  fileIn.addEventListener('change', () => { importFiles([...fileIn.files]); fileIn.value = ''; });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); importFiles([...e.dataTransfer.files]); });
+  pasteBtn.addEventListener('click', () => { importText(pasteBox.value, ''); });
+  sec.append(el('h3', {}, 'Import a recording'),
+    el('details', { open: true }, el('summary', {}, 'How to record the exam in your own browser'),
+      el('ol', {},
+        el('li', {}, 'Open the exam in Chrome, Edge or Firefox. Press ', el('b', {}, 'F12'), ' and go to the ', el('b', {}, 'Network'), ' tab. Tick ', el('b', {}, 'Preserve log'), ' (Firefox: ', el('b', {}, 'Persist logs'), ').'),
+        el('li', {}, 'Work through the exam: log in, open the quiz, use every feature students need.'),
+        el('li', {}, 'Save the recording: ', el('b', {}, 'Export HAR'), ' (the download arrow in the Network tab; if offered, choose the version without sensitive data), or right-click the list, ', el('b', {}, 'Copy, Copy all URLs'), '.'),
+        el('li', {}, 'Drop the file or paste the addresses below.')),
+      el('p', { class: 'intro' }, 'Only the web address, request type, time and status of each request are read. Cookies, headers and page content are ignored, and nothing is uploaded. A HAR file can contain login cookies, so do not share one.')),
+    drop, fileIn, pasteBox, el('div', { class: 'row-actions' }, pasteBtn), importMsg);
+
+  const setupHelp = el('details', {}, el('summary', {}, 'Optional: live testing with the SEB URL Monitor extension (one-time install, Chrome or Edge)'),
     el('ol', {},
       el('li', {}, 'Open ', el('code', {}, 'chrome://extensions'), ' (or ', el('code', {}, 'edge://extensions'), ') and turn on ', el('b', {}, 'Developer mode'), '.'),
       el('li', {}, 'Click ', el('b', {}, 'Load unpacked'), ' and choose the ', el('code', {}, 'extension'), ' folder next to this page (', el('code', {}, 'seb-config-builder/extension'), ').'),
@@ -658,12 +695,11 @@ function renderTest(sec) {
 
   const syncControls = () => {
     status.textContent = '';
-    if (!monitor.installed) status.append(el('div', { class: 'note warn' }, 'The SEB URL Monitor extension was not found. Install it below, then reload this page.'));
-    else if (!state.values.URLFilterEnable) status.append(el('div', { class: 'note warn' }, 'The URL filter is off, so SEB would allow everything. You can still record which sites the exam uses, then turn the filter on and add rules.'));
-    else status.append(el('div', { class: 'note ok' }, monitor.running ? 'Recording. Work through the exam in the test window.' : 'Extension found.'));
+    if (!state.values.URLFilterEnable) status.append(el('div', { class: 'note warn' }, 'The URL filter is off, so SEB would allow everything. You can still record which sites the exam uses, then turn the filter on and add rules.'));
+    if (!monitor.installed) status.append(el('div', { class: 'note' }, 'Live testing needs the optional SEB URL Monitor extension (not found). You can import a recording instead.'));
+    else if (state.values.URLFilterEnable) status.append(el('div', { class: 'note ok' }, monitor.running ? 'Recording. Work through the exam in the test window.' : 'Extension found.'));
     startBtn.disabled = !monitor.installed;
     stopBtn.disabled = !monitor.running;
-    setupHelp.open = !monitor.installed;
   };
   startBtn.addEventListener('click', () => {
     try { new URL(state.values.startURL); } catch { setStatus('Enter a valid start URL first.', 'err'); return; }
@@ -674,7 +710,7 @@ function renderTest(sec) {
   clearBtn.addEventListener('click', () => { monitor.log.clear(); drawLog(); });
   csvBtn.addEventListener('click', () => {
     const rows = [['time', 'type', 'method', 'url', 'seb_result', 'rule', 'http_status']];
-    for (const r of monitor.log.values()) rows.push([new Date(r.time).toISOString(), r.rtype, r.method, r.url, r.result, r.rule || '', r.status ?? r.error ?? '']);
+    for (const r of monitor.log.values()) rows.push([r.time ? new Date(r.time).toISOString() : '', r.rtype, r.method, r.url, r.result, r.rule || '', r.status ?? r.error ?? '']);
     const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\n');
     download(new TextEncoder().encode(csv), 'seb-url-test.csv', 'text/csv');
   });
@@ -685,7 +721,7 @@ function renderTest(sec) {
   function evaluate() {
     const f = SEBFilter.createFilter(filterConfig());
     for (const r of monitor.log.values()) {
-      const v = f.check(r.url, r.rtype === 'main_frame');
+      const v = f.check(r.url, r.rtype === 'main_frame' || r.rtype === 'listed');
       r.result = v.result; r.rule = v.rule ? (v.rule.auto ? 'start URL (automatic)' : v.rule.expression) : (v.result === 'block' ? 'no matching rule' : '');
       r.subframeNote = r.rtype === 'sub_frame' && !state.values.URLFilterEnableContentFilter;
     }
@@ -721,8 +757,8 @@ function renderTest(sec) {
       const shown = rows.filter(r => (!onlyBlocked.checked || r.result === 'block') && (!pagesOnly.checked || r.rtype === 'main_frame' || r.rtype === 'sub_frame')).slice(-600).reverse();
       for (const r of shown) {
         logBody.append(el('tr', {},
-          el('td', { class: 'tight' }, new Date(r.time).toLocaleTimeString()),
-          el('td', { class: 'tight' }, r.rtype === 'main_frame' ? 'page' : r.rtype === 'sub_frame' ? 'frame' : r.rtype),
+          el('td', { class: 'tight' }, r.time ? new Date(r.time).toLocaleTimeString() : ''),
+          el('td', { class: 'tight' }, r.rtype === 'main_frame' ? 'page' : r.rtype === 'sub_frame' ? 'frame' : r.rtype === 'listed' ? 'listed' : r.rtype),
           el('td', { class: 'url' }, r.url, r.quit ? el('span', { class: 'badge both', style: 'margin-left:6px' }, 'quit link') : null),
           el('td', { class: 'tight res-' + r.result, title: r.subframeNote ? 'Frames are only filtered when “filter embedded content” is on' : '' }, r.result === 'unfiltered' ? 'not filtered' : r.result === 'allow' ? 'allowed' : 'blocked'),
           el('td', { class: 'url' }, r.rule || ''),
