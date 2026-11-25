@@ -84,10 +84,14 @@ const TEMPLATES = [
     assumptions: ['Students can open any website inside SEB.', 'SEB fills the screen and leaving needs a password.', 'Copy and paste works inside SEB only, so students can copy from a web page into an answer.',
       'Other programs on the computer are still blocked.', 'Moodle checks that students used this exact file.'],
     answers: { sites: 'any', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: true, downloads: false, uploads: false, sendKey: true, quitMode: 'password' } },
+  { id: 'downup', title: 'Download a file, then upload an answer', blurb: 'Students fetch a file (data, a template) and hand back their work through Moodle.',
+    assumptions: ['Students can download files and upload files.', 'The download site is allowed. You will add its address in the next steps, as well as the exam site.',
+      'Downloads go to a temporary folder that is deleted when SEB quits.', 'When uploading, students can only choose from that folder (Windows).', 'SEB fills the screen and leaving needs a password.', 'Moodle checks that students used this exact file.'],
+    answers: { sites: 'more', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: true, uploads: true, tempDir: true, sendKey: true, quitMode: 'password' } },
   { id: 'upload', title: 'Quiz with file-upload questions', blurb: 'Students must attach a file to an answer.',
     assumptions: ['Students can upload files, for example a screenshot or a document.', 'Downloads stay switched off.', 'Only the quiz site can be opened.', 'SEB fills the screen and leaving needs a password.',
       'Moodle checks that students used this exact file.'],
-    answers: { sites: 'quiz', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: false, uploads: true, sendKey: true, quitMode: 'password' } }
+    answers: { sites: 'quiz', fullScreen: true, clipboard: 'seb', spell: false, print: false, backForward: false, downloads: false, uploads: true, tempDir: true, sendKey: true, quitMode: 'password' } }
 ];
 
 /* ---------------- The wizard ---------------- */
@@ -109,7 +113,7 @@ function wzAnswersFromState() {
     fullScreen: v.browserViewMode === 1,
     clipboard: v.clipboardPolicy === 1 ? 'block' : v.clipboardPolicy === 0 ? 'allow' : 'seb',
     spell: !!v.allowSpellCheck, print: !!v.allowPrint, backForward: !!v.allowBrowsingBackForward,
-    downloads: !!v.allowDownloads, uploads: !!v.allowUploads,
+    downloads: !!v.allowDownloads, uploads: !!v.allowUploads, tempDir: !!v.useTemporaryDownUploadDirectory,
     ms: (v.permittedProcesses || []).some(p => p && p.active && MS_BROKERS.includes(p.executable)) ? 'hello' : hasMsDomain ? 'phone' : 'no',
     sendKey: !!v.sendBrowserExamKey,
     saveName: ''
@@ -148,6 +152,12 @@ function wzApply(a) {
   v.enablePrivateClipboard = a.clipboard !== 'allow';
   v.allowSpellCheck = a.spell; v.allowPrint = a.print; v.allowBrowsingBackForward = a.backForward;
   v.allowDownloads = a.downloads; v.allowUploads = a.uploads;
+  // SEB for Mac needs this master switch as well as the two above (see SEBBrowserController.m).
+  v.allowDownUploads = a.downloads || a.uploads;
+  if (a.downloads || a.uploads) {
+    v.useTemporaryDownUploadDirectory = a.tempDir;       // fresh folder, deleted when SEB quits
+    v.allowCustomDownUploadLocation = false;             // students only see that folder in the upload dialog (Windows)
+  }
   v.sendBrowserExamKey = a.sendKey;
   // which settings to show
   const p = a.platforms, n = [p.win, p.mac, p.ios].filter(Boolean).length;
@@ -258,8 +268,9 @@ function openWizard(templateId) {
         { v: 'more', label: 'The exam site and some others', help: 'For example a video host, a calculator site or a document viewer.' },
         { v: 'any', label: 'Any website', help: 'No filtering. Students can browse freely inside SEB.' }], a.sites, v => { a.sites = v; show(); });
       show();
-      return [r, box, el('p', { class: 'wz-help' }, 'Not sure which sites the quiz needs? Finish the wizard, then use “Test the URL filter” to see every address it loads.')];
-    }
+      return [r, box, el('p', { class: 'wz-help' }, 'Do students download a file from another site? Add that site here, otherwise SEB will block the download.'), el('p', { class: 'wz-help' }, 'Not sure which sites the quiz needs? Finish the wizard, then use “Test the URL filter” to see every address it loads.')];
+    },
+    check: () => a.sites === 'more' && !a.otherSites.split(/\r?\n/).some(s => s.trim()) ? 'Add at least one other site, or choose “Only the exam’s own site”.' : ''
   });
   steps.push({
     title: 'Do students sign in with a Microsoft account?',
@@ -280,18 +291,24 @@ function openWizard(templateId) {
   });
   steps.push({
     title: 'What can students do in the exam?',
-    body: () => [
-      el('h4', {}, 'Copy and paste'),
-      wzRadio('wz-clip', [
-        { v: 'seb', label: 'Only inside the exam', help: 'Students can copy and paste within the quiz, but not to or from other programs.' },
-        { v: 'block', label: 'Blocked', help: 'Windows only. On a Mac this behaves like “only inside the exam”.' },
-        { v: 'allow', label: 'Allowed everywhere', help: 'Includes other programs. Not recommended.' }], a.clipboard, v => { a.clipboard = v; }),
-      el('h4', {}, 'Allow students to…'),
-      wzCheck('Use the spell checker', '', a.spell, c => { a.spell = c; }),
-      wzCheck('Print', '', a.print, c => { a.print = c; }),
-      wzCheck('Go back and forward between pages', 'Off is usual for quizzes that should not be revisited.', a.backForward, c => { a.backForward = c; }),
-      wzCheck('Download files', '', a.downloads, c => { a.downloads = c; }),
-      wzCheck('Upload files', 'Needed for file-upload questions.', a.uploads, c => { a.uploads = c; })]
+    body: () => {
+      const tempRow = wzCheck('Keep downloads in a temporary folder', 'Recommended. SEB makes a fresh empty folder for downloads and uploads and deletes it when SEB quits. Students can only pick files from that folder when uploading (Windows), so old files in Downloads stay out of sight.', a.tempDir, c => { a.tempDir = c; });
+      const showTemp = () => { tempRow.hidden = !(a.downloads || a.uploads); };
+      showTemp();
+      return [
+        el('h4', {}, 'Copy and paste'),
+        wzRadio('wz-clip', [
+          { v: 'seb', label: 'Only inside the exam', help: 'Students can copy and paste within the quiz, but not to or from other programs.' },
+          { v: 'block', label: 'Blocked', help: 'Windows only. On a Mac this behaves like “only inside the exam”.' },
+          { v: 'allow', label: 'Allowed everywhere', help: 'Includes other programs. Not recommended.' }], a.clipboard, v => { a.clipboard = v; }),
+        el('h4', {}, 'Allow students to…'),
+        wzCheck('Use the spell checker', '', a.spell, c => { a.spell = c; }),
+        wzCheck('Print', '', a.print, c => { a.print = c; }),
+        wzCheck('Go back and forward between pages', 'Off is usual for quizzes that should not be revisited.', a.backForward, c => { a.backForward = c; }),
+        wzCheck('Download files', 'For example a data file from the exam site. Remember to allow the site it comes from on the websites step.', a.downloads, c => { a.downloads = c; showTemp(); }),
+        wzCheck('Upload files', 'Needed for file-upload questions, or to hand in a downloaded file.', a.uploads, c => { a.uploads = c; showTemp(); }),
+        tempRow];
+    }
   });
   steps.push({
     title: 'Will Moodle check the settings?',
@@ -369,10 +386,10 @@ function openWizard(templateId) {
 function renderStart(sec) {
   sec.append(el('p', { class: 'intro' }, 'Pick the situation closest to yours. You will see what it assumes, then answer a few plain questions to adjust it. You can change your answers afterwards.'));
   sec.append(el('h3', {}, 'What are you setting up?'));
-  sec.append(el('div', { class: 'tpl-grid' }, TEMPLATES.map(t => el('button', { class: 'tpl', type: 'button', onclick: () => openWizard(t.id) },
-    el('b', {}, t.title), el('span', {}, t.blurb)))));
+  sec.append(el('div', { class: 'tpl-grid' },
+    TEMPLATES.map(t => el('button', { class: 'tpl', type: 'button', onclick: () => openWizard(t.id) }, el('b', {}, t.title), el('span', {}, t.blurb))),
+    el('button', { class: 'tpl custom', type: 'button', onclick: () => openWizard() }, el('b', {}, 'Customise: none of these fit'), el('span', {}, 'Answer all the questions yourself, starting from the usual settings.'))));
   sec.append(el('div', { class: 'row-actions' },
-    el('button', { type: 'button', onclick: () => openWizard() }, 'None of these: answer all the questions'),
     el('button', { type: 'button', onclick: () => $('#fileInput').click() }, 'Open a .seb file I already have')));
 
   sec.append(el('h3', {}, 'Your saved setups'));

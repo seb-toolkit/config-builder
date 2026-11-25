@@ -7,7 +7,7 @@
 
 A web page that makes Safe Exam Browser `.seb` files for SEB on Windows, macOS and iOS. A single file serves every platform.
 
-- **Situation templates.** Start from a built-in case (closed-book Moodle quiz, with Microsoft sign-in, practice quiz, open-book, file upload). Each lists what it assumes in plain words and pre-fills the questions.
+- **Situation templates.** Start from a built-in case (closed-book Moodle quiz, with Microsoft sign-in, practice quiz, open-book, download-then-upload, file upload). Each lists what it assumes in plain words and pre-fills the questions.
 - **Simple view first.** The page opens with just two choices (answer a few questions, or open an existing file), then a short summary with a download button. Every setting is still there behind “I know SEB: show all settings”.
 - **Setup questions and saved setups.** A short wizard asks plain questions (exam address, how students quit, which sites, what they can do) and fills in the settings. Any set of settings can be saved under a name in the browser and reused for the next exam; setups can be exported and imported. Passwords are never saved.
 - **Every setting.** All 367 root keys from both official config tools and clients are editable. They are grouped and searchable, with the official labels and help text and each platform's defaults. Common settings get friendly sections at the top.
