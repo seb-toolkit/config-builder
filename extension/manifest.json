@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "SEB URL Monitor (test helper)",
+  "version": "1.0.0",
+  "description": "Companion to the SEB config builder. Opens an exam in a test window, logs every web request it makes and checks it against your SEB URL filter rules.",
+  "permissions": ["webRequest", "webNavigation", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+    "js": ["bridge.js"],
+    "run_at": "document_start"
+  }],
+  "web_accessible_resources": [],
+  "minimum_chrome_version": "116"
+}

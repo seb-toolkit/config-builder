@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="seb-config-builder" content="1">
+<title>SEB Config Builder</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --ink: #1d2330; --muted: #5d6677; --line: #dde1e8;
+    --accent: #2457c5; --accent-ink: #fff; --win: #0a6ebd; --mac: #6b4fbb; --ios: #b0397a; --both: #4a5568; --none: #8a8f98;
+    --warn-bg: #fff6e0; --warn-ink: #7a5300; --ok-bg: #e7f6ec; --ok-ink: #1d6b3a; --err-bg: #fdecec; --err-ink: #9b1c1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --panel: #1c2027; --ink: #e6e9ef; --muted: #9aa3b2; --line: #2e343e;
+      --accent: #6c9bff; --accent-ink: #0d1117; --win: #4fa3e8; --mac: #a991f0; --ios: #e57fb4; --both: #a0aab8; --none: #7d838c;
+      --warn-bg: #3a2f12; --warn-ink: #f3d48a; --ok-bg: #143322; --ok-ink: #8fe0ae; --err-bg: #3d1717; --err-ink: #f5a3a3;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { padding: 20px 24px 8px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); }
+  code { font: 13px ui-monospace, Menlo, monospace; }
+  .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 20px; max-width: 1180px; margin: 0 auto; padding: 12px 24px 120px; }
+  nav { position: sticky; top: 12px; align-self: start; display: flex; flex-direction: column; gap: 1px; max-height: calc(100vh - 100px); overflow: auto; }
+  nav a { color: var(--ink); text-decoration: none; padding: 5px 10px; border-radius: 6px; font-size: 14px; }
+  nav a:hover { background: var(--panel); }
+  nav .sep { border-top: 1px solid var(--line); margin: 6px 0; }
+  nav .filter { margin: 10px 0 0; font-size: 13px; color: var(--muted); padding: 0 10px; }
+  nav .filter label { display: block; padding: 2px 0; color: var(--ink); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+  section h2 { font-size: 17px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  section h3 { font-size: 15px; margin: 18px 0 4px; }
+  section > p.intro, .intro { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
+  .field.first, .field:first-child { border-top: 0; }
+  .field .label { font-weight: 500; }
+  .field .help { grid-column: 1 / -1; color: var(--muted); font-size: 13px; margin-top: -2px; }
+  .field .help .src { font-weight: 600; }
+  .field .key { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  .field .defaults { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+  .field.wide { grid-template-columns: minmax(0, 1fr); }
+  .field.changed .label::after { content: " •"; color: var(--accent); }
+  .hidden { display: none !important; }
+  input[type=text], input[type=password], input[type=number], input[type=search], select, textarea {
+    font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 220px; max-width: 100%;
+  }
+  textarea { width: 100%; min-height: 110px; font: 12px ui-monospace, Menlo, monospace; }
+  input[type=number] { min-width: 0; width: 110px; }
+  input.wide, .field.wide input[type=text] { width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .badge { font-size: 11px; font-weight: 600; letter-spacing: .02em; padding: 1px 6px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 2px; white-space: nowrap; }
+  .badge.win { color: var(--win); } .badge.mac { color: var(--mac); } .badge.both { color: var(--both); } .badge.ios { color: var(--ios); } .badge.none { color: var(--none); }
+  .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 22px; transition: .15s; cursor: pointer; }
+  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::before { transform: translateX(18px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button { font: inherit; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 6px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.small { padding: 2px 8px; font-size: 13px; }
+  a.btnlink { font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-weight: 500; color: var(--muted); font-size: 13px; padding: 4px 6px; position: sticky; top: 0; background: var(--panel); }
+  td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  td input[type=text], td select { min-width: 0; width: 100%; }
+  td.tight { width: 1%; white-space: nowrap; }
+  td.url { word-break: break-all; font: 12px ui-monospace, Menlo, monospace; }
+  .scroll { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+  .row-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .note { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin: 8px 0; }
+  .note.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .note.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .note.err { background: var(--err-bg); color: var(--err-ink); }
+  .res-allow { color: var(--ok-ink); font-weight: 600; } .res-block { color: var(--err-ink); font-weight: 600; } .res-unfiltered { color: var(--muted); }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 12px 24px; z-index: 5; }
+  .bar-inner { max-width: 1180px; margin: 0 auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .bar .status { margin-left: auto; color: var(--muted); font-size: 14px; }
+  pre.xml { max-height: 60vh; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; font-size: 12px; }
+  dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); max-width: 860px; width: 92vw; }
+  dialog::backdrop { background: rgba(0,0,0,.4); }
+  .hashstate { font-size: 12px; color: var(--muted); display: block; margin-top: 3px; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .toolbar input[type=search] { flex: 1; min-width: 200px; }
+  .group-title { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 18px 0 2px; }
+  details > summary { cursor: pointer; color: var(--accent); margin: 6px 0; }
+  .help-body p, .help-body li { font-size: 14px; }
+  .help-body h3 { margin-top: 14px; }
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; margin: 6px 0; }
+  .stats b { font-size: 18px; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } nav { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Safe Exam Browser config builder</h1>
+  <p>Makes one <code>.seb</code> file that works in SEB for Windows and SEB for macOS (and iOS), with every setting both official config tools offer. Everything runs in this page; nothing is uploaded.</p>
+</header>
+
+<div class="layout">
+  <nav id="nav">
+    <div class="sep"></div>
+    <div class="filter">
+      Show settings read by
+      <label><input type="radio" name="plat" value="all" checked> All platforms</label>
+      <label><input type="radio" name="plat" value="win"> Windows</label>
+      <label><input type="radio" name="plat" value="mac"> macOS</label>
+      <label><input type="radio" name="plat" value="ios"> iOS / iPadOS</label>
+    </div>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<div class="bar">
+  <div class="bar-inner">
+    <button class="primary" id="btnDownload">Download .seb</button>
+    <button id="btnXml">View settings XML</button>
+    <button id="btnImport">Open .seb…</button>
+    <button id="btnReset">Start again</button>
+    <input type="file" id="fileInput" accept=".seb,.xml,.plist" hidden>
+    <span class="status" id="status" role="status"></span>
+  </div>
+</div>
+
+<dialog id="xmlDialog">
+  <h2 style="margin-top:0">Settings XML (before compression and encryption)</h2>
+  <pre class="xml" id="xmlOut"></pre>
+  <div class="row-actions"><button id="btnXmlDownload">Download as .xml</button><button id="btnXmlClose">Close</button></div>
+</dialog>
+
+<dialog id="pwDialog">
+  <form method="dialog">
+    <h2 style="margin-top:0">This file is password protected</h2>
+    <p id="pwText"></p>
+    <input type="password" id="pwInput" autocomplete="off" style="width:100%">
+    <p class="note err" id="pwErr" hidden></p>
+    <div class="row-actions"><button class="primary" value="ok">Open</button><button value="cancel">Cancel</button></div>
+  </form>
+</dialog>
+
+<script src="seb-core.js"></script>
+<script src="sebfilter.js"></script>
+<script src="keys.js"></script>
+<script>
+'use strict';
+/* ================================================================
+   Data
+================================================================ */
+const CATALOG = window.SEB_KEYS.keys;
+const BY_KEY = Object.fromEntries(CATALOG.map(e => [e.key, e]));
+const PROC_DEFAULTS = window.SEB_KEYS.processDefaults;
+
+// Platform badge from what the clients read (see tools/extract_keys.py)
+function platOf(key) {
+  const e = BY_KEY[key]; const r = e ? e.reads : [];
+  const w = r.includes('win'), m = r.includes('mac'), i = r.includes('ios');
+  if (w && m) return 'both';
+  if (w) return 'win';
+  if (m) return 'mac';
+  if (i) return 'ios';
+  return 'none';
+}
+const BADGE_TEXT = { both: 'Win + Mac', win: 'Windows', mac: 'macOS', ios: 'iOS', none: 'not read' };
+const BADGE_TITLE = { both: 'Read by SEB for Windows and macOS', win: 'Read by SEB for Windows only', mac: 'Read by SEB for macOS only', ios: 'Read by SEB for iOS / iPadOS only', none: 'Kept for compatibility; no current SEB client reads this key' };
+
+/* Curated sections. Each field: k (key), label, help, type override, options, wide.
+   Default values here override the tools' defaults where an exam-friendly value is better
+   or the two tools disagree (see SEB-ANALYSIS.md). */
+const SECTIONS = [
+  { id: 'help', title: 'How to use', custom: 'help' },
+  { id: 'exam', title: 'Exam', fields: [
+    { k: 'startURL', d: '', wide: true, label: 'Start URL', help: 'The page SEB opens first, for example the Moodle quiz URL.', ph: 'https://moodle.example.ac.uk/mod/quiz/view.php?id=123' },
+    { k: 'sebConfigPurpose', d: 0, label: 'File purpose', options: ['Start an exam', 'Configure the SEB client'],
+      help: '“Start an exam” applies the settings only while the exam runs. “Configure the SEB client” replaces the settings saved on the computer.' },
+    { k: 'hashedQuitPassword', t: 'hash', label: 'Quit / unlock password', help: 'Needed to quit SEB. Saved as a SHA-256 hash; leave blank for no password.' },
+    { k: 'allowQuit', d: true, label: 'Allow the user to quit SEB' },
+    { k: 'quitURL', d: '', wide: true, label: 'Quit link', help: 'Opening this URL quits SEB, for example the quiz review page. Leave blank if not needed.' },
+    { k: 'quitURLConfirm', d: true, label: 'Ask before quitting from the quit link' },
+    { k: 'hashedAdminPassword', t: 'hash', label: 'Administrator password', help: 'Protects the SEB settings on the computer. Mainly useful for “Configure the SEB client” files.' },
+    { k: 'sendBrowserExamKey', d: false, label: 'Send Browser Exam Key (BEK) and Config Key headers', help: 'Lets Moodle or another server check that the right SEB settings are in use. A new random salt is made for each new file, so the BEK changes; upload the final file to Moodle after changes.' },
+  ]},
+  { id: 'browser', title: 'Browser window', fields: [
+    { k: 'browserViewMode', d: 1, label: 'Window mode', options: ['Window', 'Full screen', 'Touch optimised (Windows)'] },
+    { k: 'mainBrowserWindowWidth', d: '100%', label: 'Window width', help: 'Pixels (1024) or a percentage of the screen (100%). Used in window mode.' },
+    { k: 'mainBrowserWindowHeight', d: '100%', label: 'Window height' },
+    { k: 'mainBrowserWindowPositioning', d: 1, label: 'Window position' },
+    { k: 'enableBrowserWindowToolbar', d: false, label: 'Show browser toolbar' },
+    { k: 'allowBrowsingBackForward', d: false, label: 'Allow back and forward navigation' },
+    { k: 'browserWindowAllowReload', d: true, label: 'Allow reload' },
+    { k: 'showReloadButton', d: true, label: 'Show reload button' },
+    { k: 'showReloadWarning', d: true, label: 'Warn before reloading' },
+    { k: 'newBrowserWindowByLinkPolicy', d: 2, label: 'Links that open a new window' },
+    { k: 'newBrowserWindowByLinkBlockForeign', d: false, label: 'Block new windows to other websites' },
+  ]},
+  { id: 'features', title: 'Browser features', fields: [
+    { k: 'enableZoomPage', d: true, label: 'Allow page zoom' },
+    { k: 'enableZoomText', d: false, label: 'Allow text-only zoom', help: 'Defaults differ between the two config tools (Windows true, macOS false); written explicitly.' },
+    { k: 'allowSpellCheck', d: false, label: 'Allow spell checking' },
+    { k: 'allowDictionaryLookup', d: false, label: 'Allow dictionary look-up' },
+    { k: 'allowFind', d: true, label: 'Allow find in page' },
+    { k: 'allowPrint', d: false, label: 'Allow printing' },
+    { k: 'allowPDFReaderToolbar', d: false, label: 'Show the PDF reader toolbar' },
+    { k: 'allowDownloads', d: false, label: 'Allow downloads' },
+    { k: 'allowUploads', d: false, label: 'Allow uploads' },
+    { k: 'allowDownUploads', d: false, label: 'Allow downloads and uploads' },
+    { k: 'examSessionClearCookiesOnStart', d: true, label: 'Clear cookies when the exam starts' },
+    { k: 'examSessionClearCookiesOnEnd', d: true, label: 'Clear cookies when the exam ends' },
+    { k: 'browserUserAgent', d: '', label: 'Text added to the user agent', help: 'Optional. Appended to SEB’s own user agent string.' },
+  ]},
+  { id: 'filter', title: 'Allowed websites (URL filter)', custom: 'filter' },
+  { id: 'test', title: 'Test the URL filter', custom: 'test' },
+  { id: 'security', title: 'Security', fields: [
+    { k: 'allowVirtualMachine', d: false, label: 'Allow running in a virtual machine' },
+    { k: 'allowScreenSharing', d: false, label: 'Allow screen sharing' },
+    { k: 'allowedDisplaysMaxNumber', d: 1, label: 'Maximum number of displays' },
+    { k: 'allowedDisplayBuiltinEnforce', d: false, label: 'Require the built-in display', help: 'If on, laptops with the lid closed and an external monitor are refused. Defaults differ between the tools; written explicitly.' },
+    { k: 'allowedDisplaysIgnoreFailure', d: false, label: 'Continue if displays can’t be checked' },
+    { k: 'allowWlan', d: false, label: 'Show Wi-Fi control' },
+    { k: 'allowWLAN', d: false, label: 'Show Wi-Fi control' },
+    { k: 'clipboardPolicy', d: 2, label: 'Clipboard', options: ['Allow (shared with other apps)', 'Block copy and paste', 'Private to SEB'] },
+    { k: 'enablePrivateClipboard', d: true, label: 'Private clipboard (not shared with other apps)' },
+  ]},
+  { id: 'ui', title: 'Taskbar, sound and power', fields: [
+    { k: 'showTaskBar', d: true, label: 'Show SEB taskbar / dock' },
+    { k: 'showTime', d: true, label: 'Show clock' },
+    { k: 'showInputLanguage', d: true, label: 'Show keyboard layout' },
+    { k: 'audioControlEnabled', d: true, label: 'Show volume control' },
+    { k: 'audioMute', d: false, label: 'Mute audio at start' },
+    { k: 'audioSetVolumeLevel', d: false, label: 'Set volume at start' },
+    { k: 'audioVolumeLevel', d: 25, label: 'Starting volume (0–100)' },
+    { k: 'systemAlwaysOn', d: true, label: 'Keep the computer awake', help: 'Defaults differ between the tools; written explicitly.' },
+    { k: 'displayAlwaysOn', d: true, label: 'Keep the display on' },
+  ]},
+  { id: 'windows', title: 'Windows only', plat: 'win', fields: [
+    { k: 'sebServicePolicy', d: 1, label: 'SEB Service' },
+    { k: 'killExplorerShell', d: false, label: 'Kiosk: stop Windows Explorer shell' },
+    { k: 'createNewDesktop', d: true, label: 'Kiosk: run on a separate desktop', help: 'Use one kiosk mode, not both.' },
+    { k: 'enableAltTab', d: true, label: 'Allow Alt+Tab' },
+    { k: 'enableAltEsc', d: false, label: 'Allow Alt+Esc' },
+    { k: 'enableCtrlEsc', d: false, label: 'Allow Ctrl+Esc' },
+    { k: 'enableStartMenu', d: false, label: 'Allow Start menu (Windows key)' },
+    { k: 'enablePrintScreen', d: false, label: 'Allow Print Screen' },
+    { k: 'enableRightMouse', d: true, label: 'Allow right mouse button' },
+    { k: 'enableEsc', d: true, label: 'Allow Esc key' },
+    { k: 'enableWindowsUpdate', d: false, label: 'Allow Windows Update during the exam' },
+    { k: 'insideSebEnableStartTaskManager', d: false, label: 'Ctrl+Alt+Del: Task Manager' },
+    { k: 'insideSebEnableLockThisComputer', d: false, label: 'Ctrl+Alt+Del: Lock' },
+    { k: 'insideSebEnableSwitchUser', d: false, label: 'Ctrl+Alt+Del: Switch user' },
+    { k: 'insideSebEnableLogOff', d: false, label: 'Ctrl+Alt+Del: Sign out' },
+    { k: 'insideSebEnableShutDown', d: false, label: 'Ctrl+Alt+Del: Shut down' },
+    { k: 'insideSebEnableChangeAPassword', d: false, label: 'Ctrl+Alt+Del: Change password' },
+    { k: 'insideSebEnableEaseOfAccess', d: false, label: 'Ease of Access on lock screen' },
+    { k: 'insideSebEnableNetworkConnectionSelector', d: false, label: 'Network selector on lock screen' },
+    { k: 'insideSebEnableVmWareClientShade', d: false, label: 'VMware client shade' },
+  ]},
+  { id: 'macos', title: 'macOS only', plat: 'mac', fields: [
+    { k: 'minMacOSVersion', d: 10, label: 'Minimum macOS version', help: 'Defaults differ between the tools (the Windows tool writes 4 = OS X 10.11); written explicitly.' },
+    { k: 'enableMacOSAAC', d: false, label: 'Use macOS Assessment Mode (AAC)', help: 'Apple’s built-in lockdown. Needs macOS 10.15.4 or later.' },
+    { k: 'enableAppSwitcherCheck', d: true, label: 'Block the app switcher (Cmd+Tab)' },
+    { k: 'forceAppFolderInstall', d: true, label: 'SEB must run from the Applications folder' },
+    { k: 'allowUserAppFolderInstall', d: false, label: '…or from the user’s own Applications folder' },
+    { k: 'allowSiri', d: false, label: 'Allow Siri' },
+    { k: 'allowDictation', d: false, label: 'Allow dictation' },
+    { k: 'allowScreenCapture', d: false, label: 'Allow screenshots and screen recording' },
+    { k: 'allowDisplayMirroring', d: false, label: 'Allow display mirroring' },
+    { k: 'detectStoppedProcess', d: true, label: 'Detect if SEB is paused or stopped' },
+    { k: 'showMenuBar', d: false, label: 'Show the macOS menu bar', help: 'Defaults differ between the tools; written explicitly.' },
+    { k: 'allowOpenAndSavePanel', d: false, label: 'Allow open/save dialogs' },
+    { k: 'allowShareSheet', d: false, label: 'Allow the Share menu' },
+    { k: 'enableRightMouseMac', d: false, label: 'Allow right mouse button / secondary click' },
+  ]},
+  { id: 'processes', title: 'Prohibited applications', custom: 'processes' },
+  { id: 'all', title: 'All settings', custom: 'all' },
+];
+const CURATED = Object.fromEntries(SECTIONS.flatMap(s => (s.fields || []).map(f => [f.k, { ...f, section: s.id }])));
+// Keys edited by their own controls rather than the generic editor
+const SPECIAL = { URLFilterRules: 'filter', URLFilterEnable: 'filter', URLFilterEnableContentFilter: 'filter', prohibitedProcesses: 'processes',
+  hashedQuitPassword: 'exam', hashedAdminPassword: 'exam', examKeySalt: 'exam', originatorVersion: null };
+const ORIGINATOR = 'SEB_Config_Builder_1.0';
+
+/* ================================================================
+   Value helpers
+================================================================ */
+const isReal = v => v && typeof v === 'object' && v.__real;
+function clone(v) {
+  if (v instanceof Uint8Array) return new Uint8Array(v);
+  if (Array.isArray(v)) return v.map(clone);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, clone(x)]));
+  return v;
+}
+function equal(a, b) { return JSON.stringify(toJsonable(a)) === JSON.stringify(toJsonable(b)); }
+// JSON <-> plist values: data as {"$data": base64}, real as {"$real": n}
+function toJsonable(v) {
+  if (v instanceof Uint8Array) return { $data: SEB.toBase64(v) };
+  if (isReal(v)) return { $real: v.real };
+  if (Array.isArray(v)) return v.map(toJsonable);
+  if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v).sort()) o[k] = toJsonable(v[k]); return o; }
+  return v;
+}
+function fromJsonable(v) {
+  if (Array.isArray(v)) return v.map(fromJsonable);
+  if (v && typeof v === 'object') {
+    if (typeof v.$data === 'string' && Object.keys(v).length === 1) return SEB.fromBase64(v.$data);
+    if (typeof v.$real === 'number' && Object.keys(v).length === 1) return { __real: true, real: v.$real };
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fromJsonable(x)]));
+  }
+  return v;
+}
+function catalogDefault(e) {
+  const fix = v => (v && typeof v === 'object' && '__data' in v) ? new Uint8Array(0) : (e.type === 'real' && typeof v === 'number' ? { __real: true, real: v } : clone(v));
+  const w = e.winDefault, m = e.macDefault;
+  if (w != null && m != null) return fix(equal(w, m) ? w : (e.reads.includes('win') && !e.reads.includes('mac') ? w : m));
+  if (w != null) return fix(w);
+  if (m != null) return fix(m);
+  return undefined;
+}
+function defaultFor(key) {
+  if (CURATED[key] && 'd' in CURATED[key]) return clone(CURATED[key].d);
+  const e = BY_KEY[key];
+  return e ? catalogDefault(e) : undefined;
+}
+
+/* ================================================================
+   State
+================================================================ */
+const state = {};
+function resetState() {
+  state.values = {};
+  for (const e of CATALOG) { const d = defaultFor(e.key); if (d !== undefined) state.values[e.key] = d; }
+  for (const k of Object.keys(CURATED)) if (!(k in state.values) && 'd' in CURATED[k]) state.values[k] = clone(CURATED[k].d);
+  state.values.hashedQuitPassword = '';
+  state.values.hashedAdminPassword = '';
+  state.values.examKeySalt = SEB.randomBytes(32);
+  state.values.URLFilterRules = [];
+  state.values.URLFilterEnable = false;
+  state.values.URLFilterEnableContentFilter = false;
+  state.values.prohibitedProcesses = clone(BY_KEY.prohibitedProcesses.macDefault || []);
+  state.values.urlFilterTrustedContent = false;   // tools disagree; Windows behaviour
+  state.values.downloadDirectoryWin = '';
+  state.newPasswords = {};
+  state.extra = {};
+  state.filePassword = '';
+  state.userProcStart = state.values.prohibitedProcesses.length; // entries from here on were added by the user
+}
+resetState();
+
+/* ================================================================
+   Rendering helpers
+================================================================ */
+const $ = s => document.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [a, v] of Object.entries(attrs)) {
+    if (a === 'class') n.className = v; else if (a.startsWith('on')) n.addEventListener(a.slice(2), v);
+    else if (v === true) n.setAttribute(a, ''); else if (v !== false && v != null) n.setAttribute(a, v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(k));
+  return n;
+};
+const badge = p => el('span', { class: 'badge ' + p, title: BADGE_TITLE[p] }, BADGE_TEXT[p]);
+const humanise = k => k.replace(/^(enable|allow)/, m => m[0].toUpperCase() + m.slice(1) + ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+const fmtDefault = v => v === undefined || v === null ? '—' : v instanceof Uint8Array ? `data (${v.length} bytes)` : Array.isArray(v) ? `${v.length} item${v.length === 1 ? '' : 's'}` : isReal(v) ? String(v.real) : typeof v === 'object' ? 'dictionary' : typeof v === 'string' ? (v === '' ? '“”' : `“${v}”`) : String(v);
+
+const refreshers = {};  // key -> [fn] so that a key shown twice stays in sync
+function onKeyChange(key, fn) { (refreshers[key] = refreshers[key] || []).push(fn); }
+function setValue(key, v, from) {
+  state.values[key] = v;
+  for (const fn of refreshers[key] || []) if (fn !== from) fn();
+  changed();
+}
+
+function typeOf(key) {
+  const c = CURATED[key]; if (c && c.t) return c.t;
+  const e = BY_KEY[key]; if (e) return e.type;
+  const v = state.values[key];
+  if (typeof v === 'boolean') return 'bool';
+  if (typeof v === 'number') return 'int';
+  if (typeof v === 'string') return 'string';
+  if (isReal(v)) return 'real';
+  if (v instanceof Uint8Array) return 'data';
+  if (Array.isArray(v)) return 'array';
+  return 'dict';
+}
+
+function control(key) {
+  const t = typeOf(key);
+  const e = BY_KEY[key] || {};
+  const c = CURATED[key] || {};
+  const label = c.label || e.label || humanise(key);
+  const options = c.options || e.options;
+  if (t === 'hash') return hashControl(key, label);
+  if (t === 'bool') {
+    const inp = el('input', { type: 'checkbox', 'aria-label': label });
+    const sync = () => { inp.checked = !!state.values[key]; };
+    inp.addEventListener('change', () => setValue(key, inp.checked, sync));
+    sync(); onKeyChange(key, sync);
+    return el('label', { class: 'switch' }, inp, el('span'));
+  }
+  if (t === 'int' && options && options.length) {
+    const sel = el('select', { 'aria-label': label });
+    const build = () => {
+      const v = state.values[key];
+      sel.textContent = '';
+      options.forEach((o, i) => sel.append(el('option', { value: i }, o)));
+      if (typeof v === 'number' && (v < 0 || v >= options.length)) sel.append(el('option', { value: v }, `Other value: ${v}`));
+      sel.value = String(v ?? 0);
+    };
+    sel.addEventListener('change', () => setValue(key, +sel.value, build));
+    build(); onKeyChange(key, build);
+    return sel;
+  }
+  if (t === 'int' || t === 'real') {
+    const inp = el('input', { type: 'number', step: t === 'real' ? 'any' : '1', 'aria-label': label });
+    const sync = () => { const v = state.values[key]; inp.value = isReal(v) ? v.real : (v ?? ''); };
+    inp.addEventListener('input', () => {
+      if (inp.value === '') return;
+      const n = t === 'real' ? parseFloat(inp.value) : parseInt(inp.value, 10);
+      if (Number.isFinite(n)) setValue(key, t === 'real' ? { __real: true, real: n } : n, sync);
+    });
+    sync(); onKeyChange(key, sync);
+    return inp;
+  }
+  if (t === 'string') {
+    const inp = el('input', { type: 'text', spellcheck: 'false', placeholder: c.ph || '', 'aria-label': label });
+    if (c.wide) inp.classList.add('wide');
+    const sync = () => { inp.value = state.values[key] ?? ''; };
+    inp.addEventListener('input', () => setValue(key, inp.value.trim(), sync));
+    sync(); onKeyChange(key, sync);
+    return inp;
+  }
+  if (t === 'data') {
+    const inp = el('input', { type: 'text', spellcheck: 'false', placeholder: 'base64', 'aria-label': label + ' (base64)' });
+    const sync = () => { const v = state.values[key]; inp.value = v instanceof Uint8Array ? SEB.toBase64(v) : ''; };
+    inp.addEventListener('change', () => { try { setValue(key, SEB.fromBase64(inp.value.trim()), sync); inp.setCustomValidity(''); } catch { inp.setCustomValidity('Not valid base64'); inp.reportValidity(); } });
+    sync(); onKeyChange(key, sync);
+    return inp;
+  }
+  // array / dict: JSON editor
+  const ta = el('textarea', { spellcheck: 'false', 'aria-label': label + ' (JSON)' });
+  const err = el('div', { class: 'note err hidden' });
+  const sync = () => { const v = state.values[key]; ta.value = v === undefined ? '' : JSON.stringify(toJsonable(v), null, 1); };
+  ta.addEventListener('change', () => {
+    try {
+      const parsed = ta.value.trim() === '' ? (t === 'array' ? [] : {}) : JSON.parse(ta.value);
+      if (t === 'array' && !Array.isArray(parsed)) throw new Error('Must be a JSON array [ … ]');
+      if (t === 'dict' && (Array.isArray(parsed) || typeof parsed !== 'object')) throw new Error('Must be a JSON object { … }');
+      err.classList.add('hidden'); setValue(key, fromJsonable(parsed), sync);
+    } catch (x) { err.textContent = x.message; err.classList.remove('hidden'); }
+  });
+  sync(); onKeyChange(key, sync);
+  return el('div', { style: 'width:100%' }, ta, err, el('div', { class: 'hashstate' }, 'JSON. Binary data is written as {"$data": "base64"}, decimal numbers as {"$real": 1.5}.'));
+}
+
+function hashControl(key, label) {
+  const wrap = el('div');
+  const info = el('span', { class: 'hashstate' });
+  const inp = el('input', { type: 'password', autocomplete: 'new-password', 'aria-label': label });
+  const clearBtn = el('button', { class: 'small', type: 'button' }, 'Remove');
+  const sync = () => {
+    const typed = state.newPasswords[key];
+    if (!typed && inp.value) inp.value = '';
+    info.textContent = typed ? 'Will be saved as a SHA-256 hash.' : state.values[key] ? 'A password is set (from the opened file). Type a new one to replace it.' : 'No password.';
+    clearBtn.hidden = !(state.values[key] && !typed);
+  };
+  inp.addEventListener('input', () => { state.newPasswords[key] = inp.value; sync(); changed(); });
+  clearBtn.addEventListener('click', () => { setValue(key, '', null); });
+  wrap.append(inp, ' ', clearBtn, info);
+  sync(); onKeyChange(key, sync);
+  return wrap;
+}
+
+function helpFor(key) {
+  const c = CURATED[key] || {}, e = BY_KEY[key] || {};
+  const parts = [];
+  if (c.help) parts.push(el('div', {}, c.help));
+  const official = e.help;
+  if (official && official !== c.help) parts.push(el('div', {}, c.help ? el('span', { class: 'src' }, 'SEB: ') : null, official));
+  if (e.helpWin && e.helpWin !== official) parts.push(el('div', {}, el('span', { class: 'src' }, 'SEB for Windows: '), e.helpWin));
+  return parts.length ? el('div', { class: 'help' }, parts) : null;
+}
+
+function renderField(key, { showDefaults = false, first = false } = {}) {
+  const c = CURATED[key] || {}, e = BY_KEY[key] || {};
+  const p = platOf(key);
+  const label = c.label || e.label || humanise(key);
+  const isWide = c.wide || ['array', 'dict'].includes(typeOf(key));
+  const row = el('div', { class: 'field' + (isWide ? ' wide' : '') + (first ? ' first' : ''), 'data-p': p, 'data-key': key },
+    el('div', {}, el('span', { class: 'label' }, label), ' ', badge(p), el('span', { class: 'key' }, key)),
+    el('div', { class: 'control-wrap' }, control(key)),
+    helpFor(key),
+    showDefaults && e.key ? el('div', { class: 'defaults' }, `Tool defaults: Windows ${fmtDefault(e.winDefault == null ? undefined : e.winDefault)} · macOS ${fmtDefault(e.macDefault == null ? undefined : e.macDefault)}`) : null);
+  const mark = () => row.classList.toggle('changed', state.values[key] !== undefined && !equal(state.values[key], defaultFor(key)) && typeOf(key) !== 'hash');
+  mark(); onKeyChange(key, mark);
+  return row;
+}
+
+/* ================================================================
+   Page
+================================================================ */
+function render() {
+  for (const k of Object.keys(refreshers)) delete refreshers[k];
+  const main = $('#main'); main.textContent = '';
+  const nav = $('#nav'); nav.querySelectorAll('a').forEach(a => a.remove());
+  const sep = nav.querySelector('.sep');
+  for (const s of SECTIONS) {
+    nav.insertBefore(el('a', { href: '#' + s.id }, s.title), sep);
+    const sec = el('section', { id: s.id, 'data-p': s.plat || 'both' }, el('h2', {}, s.title, s.plat ? badge(s.plat) : null));
+    if (s.custom === 'help') renderHelp(sec);
+    else if (s.custom === 'filter') renderFilter(sec);
+    else if (s.custom === 'test') renderTest(sec);
+    else if (s.custom === 'processes') renderProcesses(sec);
+    else if (s.custom === 'all') renderAll(sec);
+    else s.fields.forEach((f, i) => sec.append(renderField(f.k, { first: i === 0 })));
+    if (s.id === 'exam') sec.append(renderEncryption());
+    main.append(sec);
+  }
+  applyPlatformFilter();
+}
+
+function renderHelp(sec) {
+  const body = el('div', { class: 'help-body' });
+  body.innerHTML = `
+    <p class="intro">One <code>.seb</code> file holds the settings for every platform. Each client reads the keys it knows and ignores the rest. Badges show which client reads a setting: <span class="badge both">Win + Mac</span> <span class="badge win">Windows</span> <span class="badge mac">macOS</span> <span class="badge ios">iOS</span> <span class="badge none">not read</span>.</p>
+    <details open><summary>Quick start for a Moodle quiz</summary><ol>
+      <li>Put the quiz URL in <b>Start URL</b> and set a <b>quit password</b>.</li>
+      <li>Optionally set the quiz review page as the <b>Quit link</b>.</li>
+      <li>Under <b>Allowed websites</b>, turn on the URL filter and click “Allow the start URL’s site”. Add rules for any other sites the quiz needs.</li>
+      <li>Use <b>Test the URL filter</b> to walk through the quiz in a test window and see which addresses it loads, and which SEB would block.</li>
+      <li>Download the file. In Moodle, open the quiz settings → <i>Safe Exam Browser</i> → “Require the use of Safe Exam Browser: Yes – Upload my own config” and upload it. Moodle then checks the Config Key itself.</li>
+      <li>Try the file in SEB on one Windows and one Mac machine before the exam.</li>
+    </ol></details>
+    <details><summary>File purpose and passwords</summary>
+      <p><b>Start an exam</b> files apply only for that session; when SEB quits, the computer’s own SEB settings return. If you set a <b>file password</b>, students must type it to open the file (Moodle’s own uploaded-config check still works).</p>
+      <p><b>Configure the SEB client</b> files replace the settings saved on the computer. They are encrypted with the hash of the administrator password currently set in SEB on those computers (or with an empty password if none is set).</p>
+      <p>Quit and administrator passwords are stored only as SHA-256 hashes, the same way both SEB clients do it (NFC-normalised UTF-8, lower-case hex).</p></details>
+    <details><summary>Why are some settings written even when unchanged?</summary>
+      <p>When a key is missing, each SEB client falls back to its <i>own</i> default, and the Windows and macOS defaults differ for several keys (for example <code>enableZoomText</code>, <code>showMenuBar</code>, <code>minMacOSVersion</code>). Like the official tools, this page writes every setting, so the file behaves the same everywhere.</p>
+      <p>The prohibited-applications list starts with SEB’s own default list (both platforms). If a file contained only your additions, the macOS client would use just those and drop its built-in list.</p></details>
+    <details><summary>Settings marked “not read”</summary>
+      <p>These are kept by the config tools for older SEB versions or compatibility, but no current client reads them. They are written with their default values and can be ignored.</p></details>
+    <details><summary>Where the settings list comes from</summary>
+      <p>The list of keys, defaults, labels and help text is extracted from the source code of SEB for Windows (<code>seb-win-refactoring</code>) and SEB for macOS/iOS (<code>seb-mac</code>) by <code>tools/extract_keys.py</code>. The file format and encryption follow the clients’ own code; see <code>SEB-ANALYSIS.md</code>.</p></details>`;
+  sec.append(body);
+}
+
+function renderEncryption() {
+  const box = el('div', { class: 'field wide', 'data-p': 'both' });
+  const note = el('div', { class: 'help' });
+  const inp = el('input', { type: 'password', autocomplete: 'new-password', 'aria-label': 'File password' });
+  inp.value = state.filePassword;
+  inp.addEventListener('input', () => { state.filePassword = inp.value; changed(); });
+  box.append(el('div', {}, el('span', { class: 'label' }, 'File password'), ' ', badge('both')), inp, note);
+  const sync = () => {
+    note.textContent = state.values.sebConfigPurpose === 1
+      ? 'For “Configure the SEB client” files: the administrator password currently set in SEB on the computers (blank if none).'
+      : 'Students must type this to open the file. Leave blank for an unencrypted file.';
+  };
+  sync(); onKeyChange('sebConfigPurpose', sync);
+  return box;
+}
+
+/* ---------- URL filter ---------- */
+let redrawRules = () => {};
+function renderFilter(sec) {
+  sec.append(el('p', { class: 'intro' }, 'With the filter on, SEB only opens pages that match an “Allow” rule; “Block” rules win over “Allow” rules. ',
+    'Patterns: ', el('code', {}, 'moodle.example.ac.uk'), ' (that site and its subdomains), ', el('code', {}, 'example.org/path/*'), ', ', el('code', {}, '*.example.org'),
+    '. A leading dot (', el('code', {}, '.example.org'), ') means that host only, without subdomains. SEB also allows the start URL itself automatically.'));
+  sec.append(renderField('URLFilterEnable', { first: true }));
+  sec.append(renderField('URLFilterEnableContentFilter'));
+  const tbl = el('table');
+  const errBox = el('div');
+  const draw = () => {
+    tbl.textContent = ''; errBox.textContent = '';
+    const rules = state.values.URLFilterRules;
+    if (!rules.length) { tbl.append(el('tr', {}, el('td', { class: 'empty', colspan: 5 }, 'No rules yet.'))); return; }
+    tbl.append(el('tr', {}, el('th', {}, 'On'), el('th', {}, 'Action'), el('th', {}, 'Pattern'), el('th', { title: 'Regular expression instead of a simple pattern' }, 'Regex'), el('th', {})));
+    const touch = () => { setValue('URLFilterRules', rules, draw); validate(); };
+    rules.forEach((r, i) => {
+      tbl.append(el('tr', {},
+        el('td', { class: 'tight' }, el('input', { type: 'checkbox', checked: r.active, 'aria-label': 'Rule on', onchange: e => { r.active = e.target.checked; touch(); } })),
+        el('td', { class: 'tight' }, el('select', { 'aria-label': 'Action', onchange: e => { r.action = +e.target.value; touch(); } }, el('option', { value: 1, selected: r.action === 1 }, 'Allow'), el('option', { value: 0, selected: r.action === 0 }, 'Block'))),
+        el('td', {}, el('input', { type: 'text', value: r.expression, spellcheck: 'false', 'aria-label': 'Pattern', oninput: e => { r.expression = e.target.value.trim(); touch(); } })),
+        el('td', { class: 'tight' }, el('input', { type: 'checkbox', checked: r.regex, 'aria-label': 'Regular expression', onchange: e => { r.regex = e.target.checked; touch(); } })),
+        el('td', { class: 'tight' }, el('button', { class: 'small', type: 'button', onclick: () => { rules.splice(i, 1); draw(); touch(); } }, 'Delete'))));
+    });
+    validate();
+  };
+  const validate = () => {
+    const f = SEBFilter.createFilter({ enabled: true, rules: state.values.URLFilterRules });
+    errBox.textContent = '';
+    for (const x of f.errors) errBox.append(el('div', { class: 'note err' }, `Rule “${x.rule.expression}”: ${x.message}`));
+  };
+  redrawRules = draw;
+  draw(); onKeyChange('URLFilterRules', draw);
+  sec.append(el('div', { class: 'scroll', style: 'max-height:none' }, tbl), errBox, el('div', { class: 'row-actions' },
+    el('button', { type: 'button', onclick: () => { addRule(''); } }, 'Add rule'),
+    el('button', { type: 'button', onclick: () => { try { addRule(new URL(state.values.startURL).host); } catch { setStatus('Enter a valid start URL first.', 'err'); } } }, 'Allow the start URL’s site')));
+}
+function addRule(expression, action = 1) {
+  if (expression && state.values.URLFilterRules.some(r => r.expression === expression && r.action === action)) return;
+  state.values.URLFilterRules.push({ active: true, action, regex: false, expression });
+  setValue('URLFilterRules', state.values.URLFilterRules);
+}
+
+/* ---------- URL filter test (needs the SEB URL Monitor extension) ---------- */
+const monitor = { installed: false, running: false, log: new Map(), enforce: true };
+function filterConfig() {
+  return { enabled: state.values.URLFilterEnable, contentFilter: state.values.URLFilterEnableContentFilter, rules: state.values.URLFilterRules,
+           startURL: state.values.startURL, quitURL: state.values.quitURL, enforce: monitor.enforce };
+}
+function postToMonitor(type, payload) { window.postMessage({ source: 'seb-builder', type, payload }, location.origin); }
+
+function renderTest(sec) {
+  const status = el('div');
+  const ctl = el('div', { class: 'row-actions' });
+  const logBody = el('tbody');
+  const hostBody = el('tbody');
+  const stats = el('div', { class: 'stats' });
+  const onlyBlocked = el('input', { type: 'checkbox' });
+  const pagesOnly = el('input', { type: 'checkbox' });
+  const startBtn = el('button', { class: 'primary', type: 'button' }, 'Open test window');
+  const stopBtn = el('button', { type: 'button' }, 'Close test window');
+  const clearBtn = el('button', { type: 'button' }, 'Clear log');
+  const csvBtn = el('button', { type: 'button' }, 'Export CSV');
+  const enforce = el('input', { type: 'checkbox', checked: monitor.enforce });
+
+  sec.append(el('p', { class: 'intro' },
+    'Opens the start URL in a separate Chrome window and records every address it loads while you work through the exam. ',
+    'Each request is checked against your rules with the same matching code as SEB for Windows (ported and tested against its unit tests). ',
+    'Nothing leaves your computer.'));
+  sec.append(status);
+
+  const setupHelp = el('details', {}, el('summary', {}, 'Install the SEB URL Monitor extension (one-time, Chrome or Edge)'),
+    el('ol', {},
+      el('li', {}, 'Open ', el('code', {}, 'chrome://extensions'), ' (or ', el('code', {}, 'edge://extensions'), ') and turn on ', el('b', {}, 'Developer mode'), '.'),
+      el('li', {}, 'Click ', el('b', {}, 'Load unpacked'), ' and choose the ', el('code', {}, 'extension'), ' folder next to this page (', el('code', {}, 'seb-config-builder/extension'), ').'),
+      el('li', {}, 'Reload this page. The extension only talks to this builder when it is opened from ', el('code', {}, 'localhost'), '.')),
+    el('p', { class: 'intro' }, 'Why not an iframe? Most exam systems (including Moodle) refuse to be shown inside a frame, logins often fail there because of third-party cookie rules, and a page cannot see where a cross-site frame navigates. A real browser window watched by an extension shows exactly what SEB would load.'));
+  sec.append(setupHelp);
+
+  ctl.append(startBtn, stopBtn, el('label', {}, enforce, ' Block pages SEB would block'), clearBtn, csvBtn);
+  sec.append(ctl);
+  sec.append(stats);
+
+  sec.append(el('h3', {}, 'Sites contacted'));
+  sec.append(el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Host'), el('th', {}, 'Requests'), el('th', {}, 'Pages'), el('th', {}, 'Would block'), el('th', {}, ''))), hostBody)));
+  sec.append(el('h3', {}, 'Requests'));
+  sec.append(el('div', { class: 'row-actions' }, el('label', {}, onlyBlocked, ' Only show blocked'), el('label', {}, pagesOnly, ' Only pages and frames')));
+  sec.append(el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Time'), el('th', {}, 'Type'), el('th', {}, 'URL'), el('th', {}, 'SEB'), el('th', {}, 'Rule'), el('th', {}, 'HTTP'))), logBody)));
+
+  const syncControls = () => {
+    status.textContent = '';
+    if (!monitor.installed) status.append(el('div', { class: 'note warn' }, 'The SEB URL Monitor extension was not found. Install it below, then reload this page.'));
+    else if (!state.values.URLFilterEnable) status.append(el('div', { class: 'note warn' }, 'The URL filter is off, so SEB would allow everything. You can still record which sites the exam uses, then turn the filter on and add rules.'));
+    else status.append(el('div', { class: 'note ok' }, monitor.running ? 'Recording. Work through the exam in the test window.' : 'Extension found.'));
+    startBtn.disabled = !monitor.installed;
+    stopBtn.disabled = !monitor.running;
+    setupHelp.open = !monitor.installed;
+  };
+  startBtn.addEventListener('click', () => {
+    try { new URL(state.values.startURL); } catch { setStatus('Enter a valid start URL first.', 'err'); return; }
+    postToMonitor('start', filterConfig());
+  });
+  stopBtn.addEventListener('click', () => postToMonitor('stop'));
+  enforce.addEventListener('change', () => { monitor.enforce = enforce.checked; if (monitor.running) postToMonitor('update', filterConfig()); });
+  clearBtn.addEventListener('click', () => { monitor.log.clear(); drawLog(); });
+  csvBtn.addEventListener('click', () => {
+    const rows = [['time', 'type', 'method', 'url', 'seb_result', 'rule', 'http_status']];
+    for (const r of monitor.log.values()) rows.push([new Date(r.time).toISOString(), r.rtype, r.method, r.url, r.result, r.rule || '', r.status ?? r.error ?? '']);
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(',')).join('\n');
+    download(new TextEncoder().encode(csv), 'seb-url-test.csv', 'text/csv');
+  });
+  onlyBlocked.addEventListener('change', () => drawLog());
+  pagesOnly.addEventListener('change', () => drawLog());
+
+  // Re-check every logged request with the current rules (so rule edits show at once)
+  function evaluate() {
+    const f = SEBFilter.createFilter(filterConfig());
+    for (const r of monitor.log.values()) {
+      const v = f.check(r.url, r.rtype === 'main_frame');
+      r.result = v.result; r.rule = v.rule ? (v.rule.auto ? 'start URL (automatic)' : v.rule.expression) : (v.result === 'block' ? 'no matching rule' : '');
+      r.subframeNote = r.rtype === 'sub_frame' && !state.values.URLFilterEnableContentFilter;
+    }
+  }
+  let pending = false;
+  function drawLog() {
+    if (pending) return; pending = true;
+    // A timer rather than requestAnimationFrame: rAF pauses while the test window covers this one.
+    setTimeout(() => {
+      pending = false;
+      evaluate();
+      const rows = [...monitor.log.values()];
+      const hosts = new Map();
+      for (const r of rows) {
+        let h; try { h = new URL(r.url).host; } catch { h = '(other)'; }
+        const x = hosts.get(h) || { n: 0, pages: 0, blocked: 0, unmatched: 0 };
+        x.n++; if (r.rtype === 'main_frame' || r.rtype === 'sub_frame') x.pages++;
+        if (r.result === 'block') { x.blocked++; if (r.rule === 'no matching rule') x.unmatched++; }
+        hosts.set(h, x);
+      }
+      stats.textContent = '';
+      const nb = rows.filter(r => r.result === 'block').length;
+      stats.append(el('span', {}, el('b', {}, rows.length), ' requests'), el('span', {}, el('b', {}, hosts.size), ' sites'),
+        el('span', { class: nb ? 'res-block' : '' }, el('b', {}, nb), ' would be blocked'));
+      hostBody.textContent = '';
+      [...hosts.entries()].sort((a, b) => b[1].blocked - a[1].blocked || b[1].n - a[1].n).forEach(([h, x]) => {
+        hostBody.append(el('tr', {}, el('td', { class: 'url' }, h), el('td', { class: 'tight' }, x.n), el('td', { class: 'tight' }, x.pages),
+          el('td', { class: 'tight ' + (x.blocked ? 'res-block' : '') }, x.blocked),
+          el('td', { class: 'tight' }, x.unmatched && h !== '(other)' ? el('button', { class: 'small', type: 'button', onclick: () => { addRule(h.replace(/:\d+$/, '')); } }, 'Allow site')
+            : x.blocked ? el('span', { class: 'hashstate', title: 'Blocked by a Block rule; change that rule to allow it' }, 'block rule') : '')));
+      });
+      logBody.textContent = '';
+      const shown = rows.filter(r => (!onlyBlocked.checked || r.result === 'block') && (!pagesOnly.checked || r.rtype === 'main_frame' || r.rtype === 'sub_frame')).slice(-600).reverse();
+      for (const r of shown) {
+        logBody.append(el('tr', {},
+          el('td', { class: 'tight' }, new Date(r.time).toLocaleTimeString()),
+          el('td', { class: 'tight' }, r.rtype === 'main_frame' ? 'page' : r.rtype === 'sub_frame' ? 'frame' : r.rtype),
+          el('td', { class: 'url' }, r.url, r.quit ? el('span', { class: 'badge both', style: 'margin-left:6px' }, 'quit link') : null),
+          el('td', { class: 'tight res-' + r.result, title: r.subframeNote ? 'Frames are only filtered when “filter embedded content” is on' : '' }, r.result === 'unfiltered' ? 'not filtered' : r.result === 'allow' ? 'allowed' : 'blocked'),
+          el('td', { class: 'url' }, r.rule || ''),
+          el('td', { class: 'tight' }, r.error ? r.error.replace(/^net::/, '') : (r.status ?? ''))));
+      }
+      if (!shown.length) logBody.append(el('tr', {}, el('td', { colspan: 6, class: 'empty' }, monitor.log.size ? 'Nothing matches the filters above.' : 'No requests recorded yet.')));
+    }, 30);
+  }
+  monitor.redraw = () => { syncControls(); drawLog(); };
+  for (const k of ['URLFilterRules', 'URLFilterEnable', 'URLFilterEnableContentFilter', 'startURL', 'quitURL']) onKeyChange(k, () => { if (monitor.running) postToMonitor('update', filterConfig()); monitor.redraw(); });
+  syncControls(); drawLog();
+}
+
+window.addEventListener('message', e => {
+  if (e.source !== window || e.origin !== location.origin) return;
+  const m = e.data; if (!m || m.source !== 'seb-monitor') return;
+  if (m.type === 'hello') { monitor.installed = true; postToMonitor('hello'); }
+  else if (m.type === 'disconnected') { monitor.installed = false; monitor.running = false; }
+  else if (m.type === 'state') { monitor.installed = true; monitor.running = !!m.running; if (m.reason) setStatus(m.reason); }
+  else if (m.type === 'error') setStatus(m.message, 'err');
+  else if (m.type === 'request') monitor.log.set(m.id + ':' + m.url, { ...m });
+  else if (m.type === 'status') { for (const [k, r] of monitor.log) if (k.startsWith(m.id + ':')) { r.status = m.status; r.error = m.error; } }
+  else if (m.type === 'quit') { for (const r of monitor.log.values()) if (r.url === m.url) r.quit = true; setStatus('The test window opened the quit link; SEB would quit here.', 'ok'); }
+  if (monitor.redraw) monitor.redraw();
+});
+
+/* ---------- prohibited processes ---------- */
+function renderProcesses(sec) {
+  sec.append(el('p', { class: 'intro' }, 'SEB closes these programs (or refuses to start while they run). Windows matches the executable or original file name; macOS matches the bundle ID or executable name (* works as a wildcard). ',
+    'The list starts with SEB’s own defaults for both platforms; keep them unless you have a reason to change them.'));
+  const mine = el('tbody'), defs = el('tbody');
+  const defsWrap = el('details', {}, el('summary', {}), el('div', { class: 'scroll' }, el('table', {}, headRow(), defs)));
+  function headRow() { return el('thead', {}, el('tr', {}, el('th', {}, 'On'), el('th', {}, 'System'), el('th', {}, 'Executable'), el('th', {}, 'Bundle ID (macOS) / original name (Windows)'), el('th', { title: 'Force quit without asking' }, 'Force'), el('th', {}))); }
+  const list = () => state.values.prohibitedProcesses;
+  const touch = () => setValue('prohibitedProcesses', list(), draw);
+  function row(p, i) {
+    return el('tr', {},
+      el('td', { class: 'tight' }, el('input', { type: 'checkbox', checked: p.active !== false, 'aria-label': 'On', onchange: e => { p.active = e.target.checked; touch(); } })),
+      el('td', { class: 'tight' }, el('select', { 'aria-label': 'Operating system', onchange: e => { p.os = +e.target.value; touch(); draw(); } }, el('option', { value: 1, selected: p.os === 1 }, 'Windows'), el('option', { value: 0, selected: p.os === 0 }, 'macOS'))),
+      el('td', {}, el('input', { type: 'text', value: p.executable || '', spellcheck: 'false', 'aria-label': 'Executable', title: p.description || '', oninput: e => { p.executable = e.target.value.trim(); touch(); } })),
+      el('td', {}, el('input', { type: 'text', value: (p.os === 0 ? p.identifier : p.originalName) || '', spellcheck: 'false', 'aria-label': 'Bundle ID or original name', oninput: e => { if (p.os === 0) p.identifier = e.target.value.trim(); else p.originalName = e.target.value.trim(); touch(); } })),
+      el('td', { class: 'tight' }, el('input', { type: 'checkbox', checked: !!p.strongKill, 'aria-label': 'Force quit', onchange: e => { p.strongKill = e.target.checked; touch(); } })),
+      el('td', { class: 'tight' }, el('button', { class: 'small', type: 'button', onclick: () => { list().splice(i, 1); if (i < state.userProcStart) state.userProcStart--; draw(); touch(); } }, 'Delete')));
+  }
+  function draw() {
+    mine.textContent = ''; defs.textContent = '';
+    const all = list();
+    all.forEach((p, i) => (i >= state.userProcStart ? mine : defs).append(row(p, i)));
+    if (!mine.children.length) mine.append(el('tr', {}, el('td', { class: 'empty', colspan: 6 }, 'No programs added yet.')));
+    const nDef = state.userProcStart;
+    defsWrap.querySelector('summary').textContent = `SEB default list (${nDef} entries: ${all.slice(0, nDef).filter(p => p.os === 1).length} Windows, ${all.slice(0, nDef).filter(p => p.os === 0).length} macOS)`;
+  }
+  const add = os => { list().push({ ...clone(PROC_DEFAULTS.prohibitedProcesses), os, active: true, currentUser: os === 1 }); draw(); touch(); };
+  draw(); onKeyChange('prohibitedProcesses', draw);
+  sec.append(el('h3', {}, 'Added by you'), el('table', {}, headRow(), mine),
+    el('div', { class: 'row-actions' },
+      el('button', { type: 'button', onclick: () => add(1) }, 'Add Windows program'),
+      el('button', { type: 'button', onclick: () => add(0) }, 'Add macOS app'),
+      el('button', { type: 'button', onclick: () => { state.values.prohibitedProcesses = clone(BY_KEY.prohibitedProcesses.macDefault || []).concat(list().slice(state.userProcStart)); state.userProcStart = BY_KEY.prohibitedProcesses.macDefault.length; draw(); touch(); } }, 'Restore SEB defaults')),
+    defsWrap);
+  if (PROC_DEFAULTS.explorerKioskProhibited && PROC_DEFAULTS.explorerKioskProhibited.length) {
+    sec.append(el('p', { class: 'intro' }, 'The Windows config tool also adds these browsers when “stop Windows Explorer shell” kiosk mode is on: ', PROC_DEFAULTS.explorerKioskProhibited.join(', '), '.'));
+  }
+}
+
+/* ---------- all settings ---------- */
+function renderAll(sec) {
+  sec.append(el('p', { class: 'intro' }, `Every root setting from the Windows and macOS config tools and clients (${CATALOG.length} keys), grouped as in the macOS preferences. Settings changed from their default are marked •. Settings shown in the sections above are the same values.`));
+  const q = el('input', { type: 'search', placeholder: 'Search key, label or help…', 'aria-label': 'Search settings' });
+  const changedOnly = el('input', { type: 'checkbox' });
+  const showUnread = el('input', { type: 'checkbox' });
+  const list = el('div');
+  sec.append(el('div', { class: 'toolbar' }, q, el('label', {}, changedOnly, ' Changed only'), el('label', {}, showUnread, ' Include “not read” keys')), list);
+  const groups = new Map();
+  for (const e of CATALOG) {
+    if (SPECIAL[e.key] !== undefined) continue;
+    const g = e.group || 'Other';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(e.key);
+  }
+  const order = ['General', 'ConfigFile', 'Appearance', 'Browser', 'DownUploads', 'Exam', 'Applications', 'Resources', 'Network', 'Security', 'Other'];
+  const sorted = [...groups.entries()].sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99) || a[0].localeCompare(b[0]));
+  const rows = [];
+  for (const [g, keys] of sorted) {
+    const title = el('div', { class: 'group-title' }, g === 'ConfigFile' ? 'Config file' : g === 'DownUploads' ? 'Downloads / uploads' : g);
+    list.append(title);
+    const items = [];
+    keys.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })).forEach(k => {
+      const r = renderField(k, { showDefaults: true });
+      const e = BY_KEY[k];
+      r._search = (k + ' ' + (e.label || '') + ' ' + (e.help || '') + ' ' + (e.helpWin || '')).toLowerCase();
+      list.append(r); items.push(r); rows.push(r);
+    });
+    title._items = items;
+  }
+  const special = el('p', { class: 'intro' }, 'Edited in their own sections: ', Object.entries(SPECIAL).filter(([, s]) => s).map(([k, s], i) => [i ? ', ' : '', el('a', { href: '#' + s }, k)]));
+  sec.append(special);
+  const apply = () => {
+    const term = q.value.trim().toLowerCase();
+    const plat = document.querySelector('input[name=plat]:checked').value;
+    for (const r of rows) {
+      const p = r.getAttribute('data-p');
+      const okPlat = plat === 'all' ? (p !== 'none' || showUnread.checked) : (p === plat || (p === 'both' && (plat === 'win' || plat === 'mac')));
+      const ok = okPlat && (!term || r._search.includes(term)) && (!changedOnly.checked || r.classList.contains('changed'));
+      r.classList.toggle('filtered', !ok);
+      r.style.display = ok ? '' : 'none';
+    }
+    list.querySelectorAll('.group-title').forEach(t => t.style.display = t._items.some(r => r.style.display !== 'none') ? '' : 'none');
+  };
+  q.addEventListener('input', apply); changedOnly.addEventListener('change', apply); showUnread.addEventListener('change', apply);
+  renderAll.apply = apply;
+}
+
+function applyPlatformFilter() {
+  const plat = document.querySelector('input[name=plat]:checked').value;
+  document.querySelectorAll('#main > section').forEach(s => {
+    const p = s.getAttribute('data-p');
+    s.style.display = plat !== 'all' && p !== 'both' && p !== plat ? 'none' : '';
+  });
+  document.querySelectorAll('#main > section:not(#all) .field[data-p]').forEach(f => {
+    const p = f.getAttribute('data-p');
+    f.classList.toggle('hidden', plat !== 'all' && p !== plat && !(p === 'both' && plat !== 'ios'));
+  });
+  if (renderAll.apply) renderAll.apply();
+}
+document.querySelectorAll('input[name=plat]').forEach(r => r.addEventListener('change', applyPlatformFilter));
+
+/* ================================================================
+   Build / open
+================================================================ */
+async function buildDict() {
+  const d = { ...clone(state.extra) };
+  for (const [k, v] of Object.entries(state.values)) if (v !== undefined) d[k] = clone(v);
+  for (const k of ['hashedQuitPassword', 'hashedAdminPassword']) {
+    const typed = state.newPasswords[k];
+    d[k] = typed ? await SEB.hashPassword(typed) : (state.values[k] || '');
+  }
+  d.URLFilterRules = state.values.URLFilterRules.filter(r => r.expression).map(r => ({ active: !!r.active, action: r.action === 1 ? 1 : 0, regex: !!r.regex, expression: r.expression }));
+  d.prohibitedProcesses = state.values.prohibitedProcesses.filter(p => p.executable || p.identifier || p.originalName);
+  d.originatorVersion = ORIGINATOR;
+  return d;
+}
+
+function problems() {
+  const out = [];
+  const v = state.values;
+  if (!v.startURL) out.push('No start URL set.');
+  else { try { const u = new URL(v.startURL); if (!/^https?:$/.test(u.protocol)) out.push('Start URL should start with https://'); } catch { out.push('Start URL is not a valid URL.'); } }
+  if (v.URLFilterEnable && !v.URLFilterRules.some(r => r.active && r.action === 1 && r.expression)) out.push('URL filter is on but has no active “Allow” rule; only the start URL itself will open.');
+  if (SEBFilter.createFilter({ enabled: true, rules: v.URLFilterRules }).errors.length) out.push('Some URL filter rules are invalid.');
+  if (v.killExplorerShell && v.createNewDesktop) out.push('Choose only one Windows kiosk mode.');
+  if (!v.allowQuit && !v.quitURL) out.push('Quitting is not allowed and there is no quit link; students can only leave by restarting.');
+  return out;
+}
+
+let statusTimer;
+function setStatus(msg, kind) { const s = $('#status'); s.textContent = msg; s.style.color = kind === 'err' ? 'var(--err-ink)' : kind === 'ok' ? 'var(--ok-ink)' : ''; clearTimeout(statusTimer); if (kind) statusTimer = setTimeout(() => changed(), 6000); }
+function changed() {
+  const p = problems();
+  const s = $('#status'); s.style.color = '';
+  s.textContent = p.length ? '⚠ ' + p[0] + (p.length > 1 ? ` (+${p.length - 1} more)` : '') : '';
+}
+
+function fileName() {
+  try { return new URL(state.values.startURL).host.replace(/[^a-z0-9.-]/gi, '_') + '.seb'; } catch { return 'SebClientSettings.seb'; }
+}
+function download(bytes, name, type) {
+  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  const a = el('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+$('#btnDownload').addEventListener('click', async () => {
+  const p = problems();
+  if (p.length && !confirm('Before saving:\n\n• ' + p.join('\n• ') + '\n\nSave anyway?')) return;
+  try {
+    const purpose = state.values.sebConfigPurpose === 1 ? 1 : 0;
+    const bytes = await SEB.buildSeb(await buildDict(), { password: state.filePassword, purpose });
+    download(bytes, purpose === 1 ? 'SebClientSettings.seb' : fileName(), 'application/seb');
+    setStatus('Saved ' + (purpose === 1 ? 'client configuration' : state.filePassword ? 'password-protected exam file' : 'exam file') + '.', 'ok');
+  } catch (e) { setStatus('Could not build the file: ' + e.message, 'err'); }
+});
+
+let lastXml = '';
+$('#btnXml').addEventListener('click', async () => {
+  lastXml = SEB.toPlist(await buildDict());
+  $('#xmlOut').textContent = lastXml;
+  $('#xmlDialog').showModal();
+});
+$('#btnXmlClose').addEventListener('click', () => $('#xmlDialog').close());
+$('#btnXmlDownload').addEventListener('click', () => download(new TextEncoder().encode(lastXml), fileName().replace(/\.seb$/, '.xml'), 'application/xml'));
+$('#btnReset').addEventListener('click', () => { if (confirm('Discard all changes and start from the defaults?')) { resetState(); render(); changed(); } });
+
+$('#btnImport').addEventListener('click', () => $('#fileInput').click());
+$('#fileInput').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let password;
+  for (;;) {
+    try {
+      const { dict, prefix } = await SEB.readSeb(bytes, password);
+      loadDict(dict, prefix === 'pswd' || prefix === 'pwcc' ? password : '');
+      return;
+    } catch (err) {
+      if (err.code === 'NEEDS_PASSWORD' || err.code === 'BAD_PASSWORD') {
+        if (err.prefix) $('#pwDialog').dataset.prefix = err.prefix;
+        const prefix = $('#pwDialog').dataset.prefix || 'pswd';
+        $('#pwText').textContent = prefix === 'pwcc' ? 'This is a client configuration file. Enter the administrator password it was saved with (leave blank if none).' : 'Enter the file password.';
+        $('#pwErr').hidden = err.code !== 'BAD_PASSWORD'; $('#pwErr').textContent = err.message;
+        $('#pwInput').value = '';
+        $('#pwDialog').showModal();
+        const result = await new Promise(r => $('#pwDialog').addEventListener('close', () => r($('#pwDialog').returnValue), { once: true }));
+        if (result !== 'ok') return;
+        password = $('#pwInput').value;
+        continue;
+      }
+      setStatus(err.message, 'err');
+      return;
+    }
+  }
+});
+
+function loadDict(dict, password) {
+  resetState();
+  const d = { ...dict };
+  let typeWarnings = 0;
+  for (const [k, v] of Object.entries(d)) {
+    if (k === 'originatorVersion') continue;
+    const e = BY_KEY[k];
+    if (!e && !CURATED[k]) { state.extra[k] = v; continue; }
+    const t = typeOf(k) === 'hash' ? 'string' : typeOf(k);
+    const ok = t === 'bool' ? typeof v === 'boolean' : t === 'int' ? typeof v === 'number' : t === 'real' ? (isReal(v) || typeof v === 'number') : t === 'string' ? typeof v === 'string'
+      : t === 'data' ? v instanceof Uint8Array : t === 'array' ? Array.isArray(v) : t === 'dict' ? (v && typeof v === 'object' && !Array.isArray(v)) : true;
+    if (ok) state.values[k] = t === 'real' && typeof v === 'number' ? { __real: true, real: v } : v;
+    else { typeWarnings++; state.extra[k] = v; }
+  }
+  if (Array.isArray(d.URLFilterRules)) state.values.URLFilterRules = d.URLFilterRules.map(r => ({ active: r.active !== false, action: r.action === 1 ? 1 : 0, regex: r.regex === true, expression: String(r.expression || '') }));
+  // Split opened processes into SEB defaults (matching the built-in list) and the user's own
+  const defs = BY_KEY.prohibitedProcesses.macDefault || [];
+  const isDef = p => defs.some(x => x.os === p.os && (x.executable || '') === (p.executable || '') && (x.identifier || '') === (p.identifier || ''));
+  const procs = Array.isArray(d.prohibitedProcesses) ? d.prohibitedProcesses : [];
+  const a = procs.filter(isDef), b = procs.filter(p => !isDef(p));
+  state.values.prohibitedProcesses = a.concat(b);
+  state.userProcStart = a.length;
+  state.filePassword = password || '';
+  render(); changed();
+  const n = Object.keys(state.extra).length;
+  setStatus(`Opened.${n ? ` ${n} unknown setting${n > 1 ? 's' : ''} kept unchanged.` : ''}${typeWarnings ? ` ${typeWarnings} had an unexpected type and were kept as they were.` : ''}`, 'ok');
+}
+
+render(); changed();
+</script>
+</body>
+</html>
