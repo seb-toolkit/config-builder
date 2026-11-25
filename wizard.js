@@ -52,6 +52,18 @@ function useSetup(name) {
   return true;
 }
 
+/* ---------------- Microsoft sign-in (Entra ID) ---------------- */
+// Windows security components that show the Windows Hello / passkey / security-key prompt.
+// Same entries as in working exam files (see SEB issue #1518). Original name and signature are
+// left empty because they differ between Windows versions, which SEB's maintainers note is a weak spot.
+const MS_BROKERS = ['CredentialUIBroker.exe', 'PickerHost.exe', 'PinEnrollmentBroker.exe'];
+// Web sign-in endpoints Microsoft documents for Entra ID. Not confirmed for SEB specifically: test with the URL filter test.
+const MS_DOMAINS = ['login.microsoftonline.com', 'login.microsoft.com', 'login.live.com', 'login.windows.net', 'msauth.net', 'msftauth.net'];
+function brokerEntry(exe) {
+  return { active: true, autostart: false, iconInTaskbar: true, runInBackground: true, allowUserToChooseApp: false, strongKill: false, os: 1,
+    title: '', description: '', executable: exe, originalName: '', windowHandlingProcess: '', path: '', identifier: '', arguments: [], signature: '' };
+}
+
 /* ---------------- The wizard ---------------- */
 function wzAnswersFromState() {
   const v = state.values;
@@ -65,12 +77,13 @@ function wzAnswersFromState() {
     quitPassword: '',
     passwordAlreadySet: passwordSet,
     quitURL: v.quitURL || '',
-    sites: !v.URLFilterEnable ? 'any' : others.length ? 'more' : 'quiz',
+    sites: !v.URLFilterEnable ? (v.startURL ? 'any' : 'quiz') : others.length ? 'more' : 'quiz',   // a fresh builder defaults to the recommended choice
     otherSites: others.join('\n'),
     fullScreen: v.browserViewMode === 1,
     clipboard: v.clipboardPolicy === 1 ? 'block' : v.clipboardPolicy === 0 ? 'allow' : 'seb',
     spell: !!v.allowSpellCheck, print: !!v.allowPrint, backForward: !!v.allowBrowsingBackForward,
     downloads: !!v.allowDownloads, uploads: !!v.allowUploads,
+    ms: (v.permittedProcesses || []).some(p => p && p.active && MS_BROKERS.includes(p.executable)) ? 'hello' : 'no',
     sendKey: !!v.sendBrowserExamKey,
     saveName: ''
   };
@@ -92,8 +105,16 @@ function wzApply(a) {
     const want = [host, ...(a.sites === 'more' ? a.otherSites.split(/\r?\n/).map(s => s.trim()) : [])].filter(Boolean);
     const keep = v.URLFilterRules.filter(r => r.action !== 1 || r.regex);        // keep Block and regex rules
     const seen = new Set();
+    if (a.ms !== 'no') want.push(...MS_DOMAINS);
     const allow = want.filter(x => !seen.has(x) && seen.add(x)).map(x => ({ active: true, action: 1, regex: false, expression: x }));
     v.URLFilterRules = keep.concat(allow);
+  }
+  if (a.ms === 'hello') {
+    const have = new Set((v.permittedProcesses || []).map(p => p && p.executable));
+    v.permittedProcesses = (v.permittedProcesses || []).concat(MS_BROKERS.filter(x => !have.has(x)).map(brokerEntry));
+    for (const p of v.permittedProcesses) if (p && MS_BROKERS.includes(p.executable)) p.active = true;
+    // On a separate desktop (the default) the sign-in window stays hidden; working files use the Explorer-shell kiosk mode instead.
+    v.killExplorerShell = true; v.createNewDesktop = false;
   }
   v.browserViewMode = a.fullScreen ? 1 : 0;
   v.clipboardPolicy = a.clipboard === 'block' ? 1 : a.clipboard === 'allow' ? 0 : 2;
@@ -191,6 +212,17 @@ function openWizard() {
     }
   });
   steps.push({
+    title: 'Do students sign in with a Microsoft account?',
+    body: () => [
+      el('p', { class: 'wz-q' }, 'For example a university login that asks for a second step (two-step verification). Choose how students are asked to prove it is them.'),
+      wzRadio('wz-ms', [
+        { v: 'no', label: 'No Microsoft sign-in', help: 'Or they are already signed in before SEB starts.' },
+        { v: 'phone', label: 'Yes, they approve on their phone', help: 'The Authenticator app (tap or enter a number) or a text message. Nothing extra is needed in SEB; the Microsoft web addresses are allowed if you filter websites.' },
+        { v: 'hello', label: 'Yes, with Windows Hello, a PIN, a passkey or a security key', help: 'Windows only. Permits the Windows sign-in components and changes the Windows kiosk mode so the prompt can appear.' }], a.ms, v => { a.ms = v; }),
+      el('div', { class: 'note warn' }, 'Passkeys do not work in SEB for Mac or iPad. Use SEB 3.10.2 or later on Windows. The safest plan is for students to use the phone approval and delete any passkey they have enrolled. Microsoft is making passkeys the default sign-in method from September 2026, so students who enrolled one may be sent to it. Always test the whole sign-in on a real Windows computer first.'),
+      el('p', { class: 'wz-help' }, 'The Windows option adds CredentialUIBroker.exe, PickerHost.exe and PinEnrollmentBroker.exe as permitted programs without a name or signature check. SEB’s developers warn that this means a student could pass off another program as one of these. Their own fix is planned for SEB 4.')]
+  });
+  steps.push({
     title: 'How should SEB look?',
     body: () => [wzRadio('wz-screen', [
       { v: 'full', label: 'Full screen', help: 'Recommended for exams.' },
@@ -227,6 +259,7 @@ function openWizard() {
         ['Leaving SEB', a.quitMode === 'password' ? (a.quitPassword || a.passwordAlreadySet ? 'With a password' : 'With a password (not set)') : 'Anyone can quit'],
         ['Quit link', a.quitURL.trim() || 'None'],
         ['Websites', a.sites === 'quiz' ? 'Only the exam’s own site' : a.sites === 'any' ? 'Any website' : 'The exam site and ' + (a.otherSites.split(/\r?\n/).filter(s => s.trim()).length) + ' other'],
+        ['Microsoft sign-in', a.ms === 'hello' ? 'Windows Hello, PIN, passkey or key (programs permitted)' : a.ms === 'phone' ? 'Approval on phone' : 'None'],
         ['Screen', a.fullScreen ? 'Full screen' : 'Window'],
         ['Copy and paste', a.clipboard === 'seb' ? 'Only inside the exam' : a.clipboard === 'block' ? 'Blocked' : 'Allowed everywhere'],
         ['Spell check / print / back-forward', [yn(a.spell), yn(a.print), yn(a.backForward)].join(' / ')],

@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 node_modules/
+
+# Exam config files can contain institution details and password hashes
+*.seb
