@@ -78,6 +78,22 @@
   .row-actions { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .dropzone { border: 2px dashed var(--border, #b8c0cc); border-radius: 8px; padding: 18px; text-align: center; color: var(--muted); cursor: pointer; margin: 8px 0; }
   .dropzone:hover, .dropzone.over, .dropzone:focus { border-color: var(--accent); outline: none; background: rgba(0,0,0,.03); }
+  dialog.wizard { max-width: 620px; padding: 20px 24px; }
+  .wz-progress { font-size: 13px; color: var(--muted); }
+  .wz-head h2 { margin: 2px 0 10px; font-size: 20px; }
+  .wz-body h4 { margin: 16px 0 4px; font-size: 14px; }
+  .wz-body input[type=text], .wz-body input[type=password], .wz-body textarea { width: 100%; }
+  .wz-q { margin: 0 0 10px; color: var(--muted); }
+  .wz-options { display: flex; flex-direction: column; gap: 6px; }
+  .wz-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; margin-bottom: 6px; }
+  .wz-opt:hover { border-color: var(--accent); }
+  .wz-opt input { margin-top: 4px; }
+  .wz-opt b { font-weight: 600; display: block; }
+  .wz-help { display: block; font-size: 13px; color: var(--muted); font-weight: 400; margin: 2px 0 6px; }
+  .wz-sub { margin: 4px 0 8px 4px; }
+  .wz-foot { justify-content: flex-end; margin-top: 16px; }
+  .wz-body table { width: 100%; }
+  .wz-body th { text-align: left; font-weight: 500; color: var(--muted); padding-right: 14px; width: 40%; }
   .note { padding: 8px 12px; border-radius: 6px; font-size: 14px; margin: 8px 0; }
   .note.warn { background: var(--warn-bg); color: var(--warn-ink); }
   .note.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -152,6 +168,7 @@
 <script src="sebfilter.js"></script>
 <script src="harimport.js"></script>
 <script src="keys.js"></script>
+<script src="wizard.js"></script>
 <script>
 'use strict';
 /* ================================================================
@@ -178,6 +195,7 @@ const BADGE_TITLE = { both: 'Read by SEB for Windows and macOS', win: 'Read by S
    Default values here override the tools' defaults where an exam-friendly value is better
    or the two tools disagree (see SEB-ANALYSIS.md). */
 const SECTIONS = [
+  { id: 'start', title: 'Set up', custom: 'start' },
   { id: 'help', title: 'How to use', custom: 'help' },
   { id: 'exam', title: 'Exam', fields: [
     { k: 'startURL', d: '', wide: true, label: 'Start URL', help: 'The page SEB opens first, for example the Moodle quiz URL.', ph: 'https://moodle.example.ac.uk/mod/quiz/view.php?id=123' },
@@ -516,7 +534,8 @@ function render() {
   for (const s of SECTIONS) {
     nav.insertBefore(el('a', { href: '#' + s.id }, s.title), sep);
     const sec = el('section', { id: s.id, 'data-p': s.plat || 'both' }, el('h2', {}, s.title, s.plat ? badge(s.plat) : null));
-    if (s.custom === 'help') renderHelp(sec);
+    if (s.custom === 'start') renderStart(sec);
+    else if (s.custom === 'help') renderHelp(sec);
     else if (s.custom === 'filter') renderFilter(sec);
     else if (s.custom === 'test') renderTest(sec);
     else if (s.custom === 'processes') renderProcesses(sec);
