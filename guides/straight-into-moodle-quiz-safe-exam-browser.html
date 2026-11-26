@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Straight into the Moodle quiz in SEB, with no site menus</title>
+<meta name="description" content="How to launch students from an SEB link directly to a Moodle quiz and stop them leaving through the site menus: what Moodle shows before and during an attempt, and the URL filter rules that close the gaps.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/straight-into-moodle-quiz-safe-exam-browser.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus">
+<meta property="og:description" content="How to launch students from an SEB link directly to a Moodle quiz and stop them leaving through the site menus: what Moodle shows before and during an attempt, and the URL filter rules that close the gaps.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/straight-into-moodle-quiz-safe-exam-browser.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus", "description": "How to launch students from an SEB link directly to a Moodle quiz and stop them leaving through the site menus: what Moodle shows before and during an attempt, and the URL filter rules that close the gaps.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/straight-into-moodle-quiz-safe-exam-browser.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus", "item": "https://seb-toolkit.github.io/config-builder/guides/straight-into-moodle-quiz-safe-exam-browser.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>The aim: a student opens an SEB link, lands in the quiz, and has no way to wander off through the university or Moodle menus. This guide shows what Moodle really does at each step, from a test on Moodle 4.5, and how to close the gaps. Where I did not test something I say so.</p>
+
+<h2>What the student sees, step by step</h2>
+<ol>
+<li><b>The launch link.</b> Moodle's <i>Launch Safe Exam Browser</i> button is a link to the quiz's settings file with the address starting <code>sebs://</code> (or <code>seb://</code> for plain http). SEB opens, reads the file and goes to the quiz. Moodle replaces the start address in your file with the quiz's own, so you cannot send students anywhere else.</li>
+<li><b>Sign-in, if they are not signed in.</b> SEB is a new browser session, so they usually meet the sign-in page first, then the quiz. See <a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in</a> and the autologin plugin in <a href="download-staff.html">the downloads</a>.</li>
+<li><b>The quiz page,</b> with the <i>Attempt quiz</i> button.</li>
+<li><b>The attempt itself.</b></li>
+<li><b>The summary and review pages</b> after finishing.</li>
+</ol>
+
+<h2>What I found on each page</h2>
+<p>I loaded each page in a local Moodle 4.5 as a student, with requests that Moodle accepts as coming from SEB, and counted the navigation.</p>
+<table>
+<tr><th>Page</th><th>Layout</th><th>Site menus</th></tr>
+<tr><td>Quiz page (before the attempt)</td><td>Ordinary course layout</td><td><b>Full menus shown:</b> Dashboard, My courses, the course breadcrumb, messages, notifications and the user menu (profile, grades, preferences, log out). There were 19 different Moodle links.</td></tr>
+<tr><td>During the attempt</td><td>Secure layout</td><td><b>None.</b> Only the question navigation, <i>Finish attempt</i> and a way back to the quiz page.</td></tr>
+<tr><td>Summary and review after the attempt</td><td>Secure layout</td><td>None. Moodle's SEB rule applies it to these pages.</td></tr>
+</table>
+<p>So the risk is concentrated on the <b>quiz page before the attempt starts</b> (and again if the student goes back to it).</p>
+
+<h2>Why you cannot skip that page</h2>
+<p>An attempt starts only when the student presses <i>Attempt quiz</i>, which sends a request with their session key. I know of no Moodle setting that starts the attempt for them, and a link straight to the attempt page does not work. Plan for the quiz page rather than around it.</p>
+
+<h2>The fix: block the places the menus lead</h2>
+<p>You cannot hide the menu for SEB users alone with Moodle's own settings, but you can make every menu link lead nowhere using SEB's URL filter. Allow the Moodle host, then block these areas. The builder now adds all of them when you choose to keep students inside the quiz:</p>
+<table>
+<tr><th>Block</th><th>Why</th></tr>
+<tr><td><code>/my/*</code></td><td>Dashboard and My courses</td></tr>
+<tr><td><code>/course/*</code></td><td>The course page and breadcrumb</td></tr>
+<tr><td><code>/calendar/*</code>, <code>/message/*</code></td><td>Calendar, messages and notifications</td></tr>
+<tr><td><code>/user/*</code></td><td>Profile, preferences, private files, site support</td></tr>
+<tr><td><code>/grade/*</code></td><td>The grades overview in the user menu</td></tr>
+<tr><td><code>/admin/*</code>, <code>/reportbuilder/*</code></td><td>The data retention summary in the footer and custom reports</td></tr>
+<tr><td><code>/badges/*</code>, <code>/blog/*</code>, <code>/search/*</code>, <code>/tag/*</code></td><td>Other places the user menus and themes can link to</td></tr>
+<tr><td><code>/login/logout.php</code></td><td>Stops the student logging out mid-exam by accident</td></tr>
+<tr><td>The site home page (a regular expression)</td><td>The site name link; a simple rule cannot match the root address</td></tr>
+</table>
+<p>I ran the 19 menu links from the quiz page through the builder's filter. Before this change, four were still open: the grades overview, the data-privacy page, the report builder and log out. After adding the rules above they are all blocked, while the quiz, attempt and Moodle's background requests (<code>/mod/quiz/</code>, <code>/lib/ajax/</code>) stay allowed.</p>
+<p><b>What the student sees:</b> the links are still on the page. Clicking one shows SEB's “blocked” message, and the student stays where they are. That is safe, but it can look like a fault, so tell students in advance.</p>
+
+<h2>Hiding the menus completely</h2>
+<p>I did not test this. A theme tweak could hide the navigation on quiz pages, but Moodle gives you no safe way to do it for SEB users only: a plain style rule would hide the menu for teachers too, and a custom plugin is more work than it is worth for most sites. The URL filter is the tested route.</p>
+
+<h2>Same window or a pop-up?</h2>
+<p>With Moodle's browser security left on <i>None</i>, <i>Attempt quiz</i> is an ordinary form: the page redirects to the attempt in the same window. I checked this on the test site and the quiz page had no links that open a new window.</p>
+<p>It changes if the quiz's <b>Browser security</b> (under <i>Extra restrictions</i>) is set to <i>Full screen pop-up with some JavaScript security</i>. Then Moodle's start button opens the attempt in a <b>pop-up window</b>. It is a separate setting from the Safe Exam Browser one, and the SEB rule does not switch it off. What SEB does with that pop-up depends on its own new-window setting. My advice:</p>
+<ul>
+<li>Leave Moodle's browser security on <b>None</b> for SEB quizzes. SEB already provides the locked-down screen.</li>
+<li>In the <code>.seb</code> file, set <i>links requesting a new window</i> to <b>open in the same window</b> (or block them). SEB's own default is to open them in a <b>new SEB window</b>. The builder now sets this to the same window by default, and you can change it in the settings step.</li>
+<li>Test any link in a question, a help icon or a university header link: each should stay in one window or be blocked.</li>
+</ul>
+<p>I have not run the pop-up case in real SEB, so what it does there is untested.</p>
+
+<h2>What is still open</h2>
+<ul>
+<li><b>Links inside question text or feedback.</b> Anything on an allowed site opens. Keep questions free of links, or use the website test to see what the quiz really requests.</li>
+<li><b>Your university's own theme.</b> A custom menu, footer links or a banner may add links that my plain test did not show. Check your own site, not mine.</li>
+<li><b>Embedded content.</b> Turn on the filter for embedded content if the exam must not load other sites inside a page.</li>
+</ul>
+
+<h2>How to check it on your own site</h2>
+<ol>
+<li>Open the quiz page in SEB as a test student and click every menu link. Each should be blocked.</li>
+<li>Start the attempt and check there is no menu at all.</li>
+<li>Finish, look at the review page, then use the exit route you chose.</li>
+<li>Run a Moodle page through the builder's <a href="../#test">website test</a> (a HAR file works) to see which addresses the page requests and whether any would be blocked by mistake.</li>
+</ol>
+
+<h2>What was tested, and what was not</h2>
+<p>A local Moodle 4.5 site with SEB set manually, requests sent with the right headers from the command line, and the builder's own filter engine for the link check. I did not use real SEB on Windows or Mac, an uploaded <code>.seb</code> file or a university theme, so confirm each with your own test run.</p>
+<p>Related: <a href="block-generative-ai-safe-exam-browser.html">keeping students inside the quiz and blocking AI</a>, <a href="test-run-safe-exam-browser-exam.html">how to do a test run</a>.</p>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

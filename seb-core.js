@@ -147,7 +147,10 @@
   //   start exam + password    -> gzip("pswd" + RNCryptor(gzip(xml), password))
   //   configure client         -> gzip("pwcc" + RNCryptor(gzip(xml), sha256hex(password) or ""))
   //   start exam, no password  -> gzip("plnd" + gzip(xml))
-  async function buildSeb(dict, { password = '', purpose = 0 } = {}) {
+  //   plain: true (start exam, no password) -> the XML plist itself, uncompressed. Both SEB clients read it,
+  //   and Moodle's "Upload my own config" accepts only this form (it parses the file as XML and rejects gzip).
+  async function buildSeb(dict, { password = '', purpose = 0, plain = false } = {}) {
+    if (plain && purpose !== 1 && !password) return enc.encode(toPlist(dict));
     const inner = await gzip(enc.encode(toPlist(dict)));
     let block;
     if (purpose === 1) {

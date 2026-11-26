@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="seb-config-builder" content="1">
-<title>SEB Config Builder</title>
+<title>SEB Config Builder: make Safe Exam Browser (.seb) files for Moodle</title>
+<meta name="description" content="Free, unofficial tool that makes Safe Exam Browser .seb config files for Moodle quizzes. Pick a situation, answer a few plain questions, download the file. Runs in your browser.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SEB Config Builder: make Safe Exam Browser (.seb) files for Moodle">
+<meta property="og:description" content="Pick a situation, answer a few plain questions, download a .seb file. Free and unofficial; runs in your browser.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SEB Config Builder","applicationCategory":"EducationalApplication","operatingSystem":"Any (web browser)","description":"Unofficial web tool that makes Safe Exam Browser (.seb) configuration files for Moodle quizzes.","url":"https://seb-toolkit.github.io/config-builder/","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}}</script>
 <style>
   :root {
     --bg: #f6f7f9; --panel: #fff; --ink: #1d2330; --muted: #5d6677; --line: #dde1e8;
@@ -94,6 +101,8 @@
   .wz-foot { justify-content: flex-end; margin-top: 16px; }
   .wz-body table { width: 100%; }
   .wz-body th { text-align: left; font-weight: 500; color: var(--muted); padding-right: 14px; width: 40%; }
+  .wz-field { display: block; margin: 6px 0; font-size: 14px; } .wz-field input { display: block; width: 100%; box-sizing: border-box; margin-top: 2px; }
+  .wz-sheet { border: 1px solid var(--line, #ccc); border-radius: 8px; padding: 8px 12px; margin: 8px 0; } .wz-sheet span { display: block; font-size: 13px; opacity: .8; }
   .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 8px 0 12px; }
   button.tpl { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; padding: 12px 14px; font: inherit; }
   button.tpl b { font-weight: 600; }
@@ -138,7 +147,7 @@
 <header>
   <h1>Safe Exam Browser config builder</h1>
   <p>Answer a few questions and get a <code>.seb</code> file for Safe Exam Browser, for Windows, Mac and iPad. Everything stays in this page; nothing is uploaded.</p>
-  <p class="viewtoggle"><a href="#" id="viewToggle"></a></p>
+  <p class="viewtoggle"><a href="#" id="viewToggle"></a> &nbsp;·&nbsp; <a href="guides/">Guides</a> &nbsp;·&nbsp; <a href="guides/students.html">For students</a> &nbsp;·&nbsp; <a href="guides/staff.html">For staff</a></p>
 </header>
 
 <div class="layout">
@@ -186,6 +195,7 @@
 <script src="sebfilter.js"></script>
 <script src="harimport.js"></script>
 <script src="keys.js"></script>
+<script src="sheets.js"></script>
 <script src="wizard.js"></script>
 <script>
 'use strict';
@@ -976,7 +986,7 @@ $('#btnDownload').addEventListener('click', async () => {
   if (p.length && !confirm('Before saving:\n\n• ' + p.join('\n• ') + '\n\nSave anyway?')) return;
   try {
     const purpose = state.values.sebConfigPurpose === 1 ? 1 : 0;
-    const bytes = await SEB.buildSeb(await buildDict(), { password: state.filePassword, purpose });
+    const bytes = await SEB.buildSeb(await buildDict(), { password: state.filePassword, purpose, plain: true });   // plain XML: SEB reads it, and Moodle can only upload this form
     download(bytes, purpose === 1 ? 'SebClientSettings.seb' : fileName(), 'application/seb');
     setStatus('Saved ' + (purpose === 1 ? 'client configuration' : state.filePassword ? 'password-protected exam file' : 'exam file') + '.', 'ok');
   } catch (e) { setStatus('Could not build the file: ' + e.message, 'err'); }
@@ -990,7 +1000,7 @@ $('#btnXml').addEventListener('click', async () => {
 });
 $('#btnXmlClose').addEventListener('click', () => $('#xmlDialog').close());
 $('#btnXmlDownload').addEventListener('click', () => download(new TextEncoder().encode(lastXml), fileName().replace(/\.seb$/, '.xml'), 'application/xml'));
-$('#btnReset').addEventListener('click', () => { if (confirm('Discard all changes and start from the defaults?')) { window.simpleReady = false; resetState(); render(); changed(); } });
+$('#btnReset').addEventListener('click', () => { if (confirm('Discard all changes and start from the defaults?')) { window.simpleReady = false; window.wzSituation = null; resetState(); render(); changed(); } });
 
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', async e => {

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microsoft sign-in and passkeys in Safe Exam Browser</title>
+<meta name="description" content="What works when students log in with a Microsoft account inside Safe Exam Browser: phone approval, Windows Hello, passkeys and the known limits.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/microsoft-sign-in-safe-exam-browser.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)">
+<meta property="og:description" content="What works when students log in with a Microsoft account inside Safe Exam Browser: phone approval, Windows Hello, passkeys and the known limits.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/microsoft-sign-in-safe-exam-browser.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)", "description": "What works when students log in with a Microsoft account inside Safe Exam Browser: phone approval, Windows Hello, passkeys and the known limits.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/microsoft-sign-in-safe-exam-browser.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)", "item": "https://seb-toolkit.github.io/config-builder/guides/microsoft-sign-in-safe-exam-browser.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>Many universities use Microsoft (Entra ID) to log students in to Moodle. When students sign in inside Safe Exam Browser (SEB), the type of second step matters a great deal. This guide summarises what is known as of November 2026 and what to do about it. It is based on public discussion in the SEB project, so treat it as guidance and test it on real computers.</p>
+
+<h2>The short version</h2>
+<ul>
+<li><b>Approval on a phone</b> (the Authenticator app or a text message) is the safest option. The approval happens on the phone, outside SEB, so nothing special is needed in SEB itself, apart from allowing the Microsoft web addresses if you filter websites.</li>
+<li><b>Windows Hello, a PIN, a passkey or a security key</b> show a Windows security prompt. SEB can block or hide it, and the login page then waits forever.</li>
+<li><b>Passkeys do not work in SEB for Mac or iPad</b>, because the browser engine they use does not support them.</li>
+</ul>
+
+<h2>What the problem looks like</h2>
+<p>The SEB for Windows issue <a href="https://github.com/SafeExamBrowser/seb-win-refactoring/issues/1518">#1518</a> describes it. Microsoft is making passkeys the default sign-in method in Entra ID, and the issue gives September 2026 as the start. In SEB, the passkey prompt is a Windows Security (WebAuthn) window. An earlier report, <a href="https://github.com/SafeExamBrowser/seb-win-refactoring/issues/921">#921</a>, saw the same thing in 2024: the prompt opens in the background, or appears only after SEB is closed.</p>
+
+<h2>What helped people</h2>
+<ul>
+<li><b>Permit the Windows sign-in components.</b> Add <code>CredentialUIBroker.exe</code>, <code>PickerHost.exe</code> and <code>PinEnrollmentBroker.exe</code> to SEB's permitted programs. The issue thread reports success with these three.</li>
+<li><b>Choose the right Windows kiosk mode.</b> With the default "separate desktop" mode, the prompt stays hidden. One user reported that the "disable Explorer shell" mode lets it appear.</li>
+<li><b>Use a recent SEB.</b> Some users on 3.10.1 had the problem fixed by upgrading to 3.10.2.</li>
+<li><b>Avoid the passkey.</b> One school switched accounts to Authenticator push approval and deleted synced passkeys.</li>
+<li><b>Log in before SEB.</b> A Moodle plugin avoids the sign-in inside SEB altogether: <a href="https://github.com/ethz-let/moodle-quizaccess_seb_autologin"><code>moodle-quizaccess_seb_autologin</code></a> from ETH Zürich. A member of the SEB team suggested it in the issue thread, as a pilot that was "not yet thoroughly tested". Students log in as normal in their usual browser, start the quiz, and the plugin signs them in when SEB opens. Its page lists these requirements and limits: Moodle 4.2 or later over HTTPS, web services enabled, and the Safe Exam Browser access rule on the quiz. On Windows, <code>startURLAppendQueryParameter</code> must be true in the SEB settings. The token that carries the login lasts five minutes and is tied to the student's IP address. It does not apply to Moodle administrators, guests or suspended accounts. Its authors warn it may affect your setup, so test it on a copy of your site first, and ask your Moodle administrator, since it is a plugin that has to be installed.</li>
+</ul>
+
+<h2>The security trade-off</h2>
+<p>Permitting a program without checking its original name and its signature means a student could rename another program to match. The SEB maintainers raised this, and said a fix is planned for SEB 4, with no date given. The issue was closed by an automatic stale-bot on 24 November 2026 as "not planned", so do not assume a change is coming soon.</p>
+
+<h2>What the builder does</h2>
+<p>In the <a href="../">SEB Config Builder</a>, the question "Do students sign in with a Microsoft account?" offers three answers:</p>
+<ul>
+<li><b>No Microsoft sign-in.</b></li>
+<li><b>Yes, approve on the phone.</b> If you filter websites, the builder allows the Microsoft sign-in addresses (<code>login.microsoftonline.com</code>, <code>login.microsoft.com</code>, <code>login.live.com</code>, <code>login.windows.net</code>, <code>msauth.net</code> and <code>msftauth.net</code>). These come from Microsoft documentation, not from SEB, so confirm them with a recorded session as described in the <a href="seb-url-filter-moodle.html">URL filter guide</a>.</li>
+<li><b>Yes, Windows Hello, PIN, passkey or key.</b> Windows only. It permits the three programs without a name or signature check, and switches the kiosk mode. The security warning above applies.</li>
+</ul>
+
+<h2>Recommended plan</h2>
+<ol>
+<li>Ask students to use phone approval and to delete any passkey they have set up. Microsoft may offer a new passkey by default, so tell them to decline it.</li>
+<li>Test the whole sign-in on a real Windows computer, and on a Mac if you have Mac students.</li>
+<li>Have a fallback: a short practice quiz a few days before, so problems appear early.</li>
+</ol>
+
+<h2>Sources</h2>
+<ul>
+<li><a href="https://github.com/SafeExamBrowser/seb-win-refactoring/issues/1518">SEB for Windows issue #1518: Passkeys will be the default authentication method in Entra ID</a></li>
+<li><a href="https://github.com/SafeExamBrowser/seb-win-refactoring/issues/921">SEB for Windows issue #921: Passkey support</a></li>
+<li><a href="https://github.com/ethz-let/moodle-quizaccess_seb_autologin">moodle-quizaccess_seb_autologin (ETH Zürich) on GitHub</a></li>
+<li><a href="https://learn.microsoft.com/entra/identity/enterprise-apps/tenant-restrictions">Microsoft: sign-in endpoints (tenant restrictions)</a></li>
+</ul>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

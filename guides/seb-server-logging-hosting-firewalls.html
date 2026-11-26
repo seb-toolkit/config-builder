@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEB Server: logging, hosting and firewalls</title>
+<meta name="description" content="Can Safe Exam Browser log student activity? How SEB Server works, how clients connect, where to host it, and what happens if a firewall blocks it.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/seb-server-logging-hosting-firewalls.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SEB Server: logging student activity, where to host it, and what happens behind a firewall">
+<meta property="og:description" content="Can Safe Exam Browser log student activity? How SEB Server works, how clients connect, where to host it, and what happens if a firewall blocks it.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/seb-server-logging-hosting-firewalls.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "SEB Server: logging student activity, where to host it, and what happens behind a firewall", "description": "Can Safe Exam Browser log student activity? How SEB Server works, how clients connect, where to host it, and what happens if a firewall blocks it.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/seb-server-logging-hosting-firewalls.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "SEB Server: logging student activity, where to host it, and what happens behind a firewall", "item": "https://seb-toolkit.github.io/config-builder/guides/seb-server-logging-hosting-firewalls.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>SEB Server: logging student activity, where to host it, and what happens behind a firewall</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>Safe Exam Browser (SEB) can record some of what students do and send it to a central server, but only through a separate piece of software called SEB Server. Neither a plain <code>.seb</code> file nor Moodle's Safe Exam Browser setting does this on its own. This guide explains what SEB records, how it connects, where the server can run, and what happens when a firewall gets in the way. It is based on the SEB for Windows source code and the SEB Server setup documentation as of November 2026. I have not run a production SEB Server, so test everything on your own network.</p>
+
+<h2>What SEB records without a server</h2>
+<ul>
+<li><b>A local log.</b> SEB keeps a log on the student's computer, with a setting for the folder (<code>enableLogging</code>, <code>logDirectoryWin</code> and <code>logDirectoryOSX</code>). SEB's help text describes it as useful for debugging and for finding possible manipulation. Nothing sends it anywhere by itself.</li>
+<li><b>Web addresses in that log.</b> A setting controls how SEB shows and logs addresses (<code>browserWindowShowURL</code>). Set to "never", URLs are neither shown nor logged.</li>
+<li><b>Moodle.</b> Moodle's Safe Exam Browser plugin checks settings and keys. I found no logging of student web activity in it. Moodle's own logs show activity inside Moodle, such as quiz attempts.</li>
+</ul>
+
+<h2>What SEB Server adds</h2>
+<ul>
+<li><b>Regular pings</b> at a set interval, so invigilators can see who is connected.</li>
+<li><b>Log events</b>, queued by the client and sent in batches on a timer.</li>
+<li><b>Status</b> of the network connection and the power supply.</li>
+<li><b>Messages in both directions:</b> students can raise a hand, and invigilators can lock a screen or end a session. The client confirms each instruction.</li>
+<li><b>Screen proctoring</b> (optional). With a Screen Proctoring service, SEB takes screenshots at set intervals and can attach metadata: the active program, the window title and the web address. These settings (<code>screenProctoringMetadataURLEnabled</code> and its siblings) can only be configured through SEB Server, according to SEB's help text. It is a separate service from the main server.</li>
+</ul>
+<p>I did not read the details of exactly which log events are sent, so check SEB Server's documentation for that.</p>
+
+<h2>How the clients connect</h2>
+<p>SEB always makes the connection. The server never connects into a student's computer. In the Windows client the sequence is:</p>
+<ol>
+<li><b>Connection settings.</b> The student starts SEB with a small configuration that holds the server address, an API discovery address, the institution, a client name and secret, and optionally an exam identifier. SEB Server generates this for you. The <a href="../">SEB Config Builder</a> does not make it.</li>
+<li><b>Discover the API and log in.</b> SEB loads the API from the discovery address and requests an access token with the client name and secret.</li>
+<li><b>Choose the exam.</b> SEB asks which exams are available, and lets the student choose unless the configuration names one.</li>
+<li><b>Fetch the exam settings.</b> SEB downloads the exam's configuration from the server and starts the exam with it. With SEB Server, the settings can come from the server rather than a file you upload to Moodle.</li>
+<li><b>Report during the exam.</b> Pings, queued log entries, network and power status, and any hand-raising or instructions.</li>
+</ol>
+
+<h2>Where SEB Server can run</h2>
+<ul>
+<li><b>It is software you host yourself.</b> I did not find a hosted service. Your central IT or learning-technology team may already run one.</li>
+<li><b>Anywhere that runs Docker.</b> The official setup guide says only Docker-based installs are currently supported. The server and its web interface are one Java container, with a separate MariaDB database. It runs on Java 21 and is licensed under MPL-2.0.</li>
+<li><b>Sizing.</b> The production guide uses the official MariaDB image with an nginx reverse proxy, and recommends about 4 cores, 32 GB of memory and 100 GB of disk. There is a lighter demo setup that needs only Docker and Docker Compose.</li>
+<li><b>Reachable from students.</b> Their SEB must be able to reach the server's address over HTTPS. For students at home that means a public address with a valid certificate. For lab rooms, an address on the university network may be enough.</li>
+<li><b>Where the data sits.</b> This affects your data protection position. Think about your own infrastructure or an approved UK or EU provider, retention rules and who can see recordings.</li>
+</ul>
+
+<h2>Firewalls, and what happens if SEB cannot connect</h2>
+<p>Each student computer needs an outbound HTTPS connection to the server (nothing inbound). Screen proctoring, if used, has its own address and may need its own rule. These requests come from SEB itself, not from the browser, so I believe the website allow-list does not apply to them, but this is my reading of the code and worth testing. I did not check whether SEB uses a system proxy for them.</p>
+<h3>Before the exam starts</h3>
+<ul>
+<li>If a request fails, SEB shows a dialog with <i>Retry</i> and <i>Abort</i>, and, if the configuration allows it, <i>Fallback</i>.</li>
+<li>SEB keeps asking until a request succeeds or the student chooses, so a student behind a blocking firewall is stuck at that dialog.</li>
+<li>Fallback starts SEB with the local start address and settings, without the server. The settings include a fallback password (<code>sebServerFallbackPasswordHash</code>), but I could not find where the Windows client checks it, so test that it is enforced before relying on it.</li>
+<li>The number of retry attempts, the interval and the timeout are configurable.</li>
+</ul>
+<h3>During the exam</h3>
+<ul>
+<li>The exam keeps running. A failed ping only writes a warning to SEB's local log.</li>
+<li>The student shows as disconnected on the server, and instructions such as lock or end do not arrive until the connection returns.</li>
+<li>I did not check whether log entries from the gap are kept or lost.</li>
+</ul>
+
+<h2>Data protection</h2>
+<p>This is not legal advice. Recording web activity, window titles and especially screenshots is personal data processing, and screenshots can capture private content. In the UK you would normally need a lawful basis, a clear notice to students, a data protection impact assessment, minimal data collection and a retention period. Choose the least invasive option that meets your need: blocked-site messages and a local log may be enough, and screenshots are the heaviest choice. As with other monitoring, expect students to be anxious about it, so explain what is collected and why.</p>
+
+<h2>Before your first exam with SEB Server</h2>
+<ol>
+<li>Ask IT to allow outbound HTTPS to the server from every network students will use.</li>
+<li>Test from a lab room, campus Wi-Fi, a home connection and any VPN.</li>
+<li>Decide whether fallback is allowed, and who holds the fallback password.</li>
+<li>Agree what invigilators do for a student who shows as disconnected.</li>
+<li>Complete your data protection review and tell students what is recorded.</li>
+<li>Run a practice session first. See the <a href="secure-exam-environments.html">guide to secure exam environments</a> for the wider picture.</li>
+</ol>
+
+<h2>Sources</h2>
+<ul>
+<li><a href="https://github.com/SafeExamBrowser/seb-server">SEB Server repository</a> (Java 21, MPL-2.0)</li>
+<li><a href="https://seb-server-setup.readthedocs.io/en/latest/overview.html">SEB Server installation guide: overview</a>, <a href="https://seb-server-setup.readthedocs.io/en/latest/install-production.html">production setup</a> and <a href="https://seb-server-setup.readthedocs.io/en/latest/install-demo.html">demo setup</a></li>
+<li><a href="https://github.com/SafeExamBrowser/seb-win-refactoring">SEB for Windows source code</a>: the server connection (<code>SafeExamBrowser.Server</code>) and the failure handling (<code>ServerOperation.cs</code> in <code>SafeExamBrowser.Runtime</code>)</li>
+</ul>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

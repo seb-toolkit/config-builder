@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safe Exam Browser downloads and tools for staff</title>
+<meta name="description" content="Where staff get Safe Exam Browser for Windows, Mac and iPad, SEB Server, the Moodle plugin and the SEB Config Builder, plus how to roll it out and check versions.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/download-staff.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Downloads for staff: Safe Exam Browser, SEB Server and tools">
+<meta property="og:description" content="Where staff get Safe Exam Browser for Windows, Mac and iPad, SEB Server, the Moodle plugin and the SEB Config Builder, plus how to roll it out and check versions.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/download-staff.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Downloads for staff: Safe Exam Browser, SEB Server and tools", "description": "Where staff get Safe Exam Browser for Windows, Mac and iPad, SEB Server, the Moodle plugin and the SEB Config Builder, plus how to roll it out and check versions.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/download-staff.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "Downloads for staff: Safe Exam Browser, SEB Server and tools", "item": "https://seb-toolkit.github.io/config-builder/guides/download-staff.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>Downloads for staff: Safe Exam Browser, SEB Server and tools</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>This page lists where staff get Safe Exam Browser (SEB) and related tools. The SEB programs come from the official project; this site links to them and does not host them.</p>
+
+<h2>Safe Exam Browser</h2>
+<table>
+<tr><th>Platform</th><th>Source</th><th>Listed version (26 Nov 2026)</th></tr>
+<tr><td>Windows 10 (1803 or later) and 11</td><td><a href="https://safeexambrowser.org/download_en.html">Official download page</a> (installer from GitHub or Codeberg)</td><td>3.10.3</td></tr>
+<tr><td>macOS</td><td><a href="https://safeexambrowser.org/download_en.html">Official download page</a> (disk image on GitHub)</td><td>3.7.2</td></tr>
+<tr><td>iOS / iPadOS</td><td><a href="https://itunes.apple.com/app/safeexambrowser/id1155002964">App Store</a></td><td>3.7.2</td></tr>
+</table>
+<p>The official page also has <a href="https://safeexambrowser.org/download_releases_en.html">former releases</a>, checksums for Windows and Mac, and an integrity checker, the SEB Verificator. Versions change often, so check the page before each term. Apple’s signing certificate updates have affected older Mac versions on newer macOS releases, so update Macs before an exam period.</p>
+
+<h2>For servers and learning systems</h2>
+<ul>
+<li><b>Moodle:</b> the Safe Exam Browser quiz access rule has been built into Moodle since version 3.9. The official page also lists a <a href="https://github.com/moodleou/moodle-quizaccess_safeexambrowser">plugin on GitHub</a> for older versions.</li>
+<li><b>ILIAS:</b> a <a href="https://github.com/hrz-unimr/Ilias.SEBPlugin">plugin</a> is listed on the official page.</li>
+<li><b>SEB Server:</b> no download on the official page. It links to the <a href="https://github.com/SafeExamBrowser/seb-server">SEB Server project on GitHub</a>. You run your own instance or use a provider. See <a href="seb-server-logging-hosting-firewalls.html">logging, hosting and firewalls</a>.</li>
+<li><b>Autologin plugin for Moodle:</b> <a href="https://github.com/ethz-let/moodle-quizaccess_seb_autologin">moodle-quizaccess_seb_autologin</a>. Check how it fits your sign-in method.</li>
+</ul>
+
+<h2>Tools on this site</h2>
+<ul>
+<li><a href="../">SEB Config Builder</a>: makes the <code>.seb</code> settings file, tests which websites the exam uses, and makes printable information sheets for students, invigilators and IT.</li>
+<li><a href="students.html">Student guides</a> you can link from quiz instructions.</li>
+</ul>
+
+<h2>Rolling it out</h2>
+<ol>
+<li><b>Choose a supported version</b> and say which one in your student instructions.</li>
+<li><b>Lab computers:</b> install the same version on every computer or add it to the image, then test the file on one.</li>
+<li><b>Students’ own computers:</b> link to <a href="download-students.html">the student download page</a> and ask them to install by a date.</li>
+<li><b>Test before the exam:</b> see <a href="test-run-safe-exam-browser-exam.html">how to do a test run</a>.</li>
+<li><b>Keep records:</b> the versions you tested and the exact settings file.</li>
+</ol>
+<p>Version details were read from the official page on 26 November 2026. Confirm them before you rely on them.</p>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

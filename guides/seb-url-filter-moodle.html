@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Safe Exam Browser URL filter for Moodle: what to allow</title>
+<meta name="description" content="Which websites to allow in Safe Exam Browser for a Moodle quiz, how SEB URL filter patterns work, and how to find the exact list by recording a real session.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/seb-url-filter-moodle.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Safe Exam Browser URL filter for Moodle: what to allow and how to test it">
+<meta property="og:description" content="Which websites to allow in Safe Exam Browser for a Moodle quiz, how SEB URL filter patterns work, and how to find the exact list by recording a real session.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/seb-url-filter-moodle.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Safe Exam Browser URL filter for Moodle: what to allow and how to test it", "description": "Which websites to allow in Safe Exam Browser for a Moodle quiz, how SEB URL filter patterns work, and how to find the exact list by recording a real session.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/seb-url-filter-moodle.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "Safe Exam Browser URL filter for Moodle: what to allow and how to test it", "item": "https://seb-toolkit.github.io/config-builder/guides/seb-url-filter-moodle.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>Safe Exam Browser URL filter for Moodle: what to allow and how to test it</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>Safe Exam Browser (SEB) can limit which websites students open during an exam. This is the URL filter. Used well, it keeps students on the quiz. Used badly, it breaks images, equations or login. This guide explains how it behaves and how to build the right list.</p>
+
+<h2>How the filter decides</h2>
+<ul>
+<li><b>Block rules win.</b> SEB checks Block rules first, then Allow rules. A web address that matches nothing is blocked.</li>
+<li><b>The start page is allowed automatically.</b> If your start address would otherwise be blocked, SEB adds an allow rule for it.</li>
+<li><b>Matching ignores case</b>, and addresses are decoded before they are matched.</li>
+</ul>
+
+<h2>Pages only, or everything on the page?</h2>
+<p>There are two levels:</p>
+<ul>
+<li><b>Filter pages (the usual setting).</b> Only the page a student navigates to is checked. Scripts, images and fonts that the page loads from elsewhere are not checked.</li>
+<li><b>Filter embedded content as well.</b> Every request is checked: images, scripts, frames and background requests. This is stricter, and every host the quiz uses must be allowed.</li>
+</ul>
+<p>With page filtering, the list is short, often just your Moodle address and the sign-in site. Only switch on content filtering if you need it.</p>
+
+<h2>Writing patterns</h2>
+<table>
+<tr><th>Pattern</th><th>Matches</th></tr>
+<tr><td><code>moodle.example.ac.uk</code></td><td>That site and its subdomains</td></tr>
+<tr><td><code>.moodle.example.ac.uk</code></td><td>That host only, no subdomains (leading dot)</td></tr>
+<tr><td><code>*.example.org</code></td><td>Any subdomain of example.org</td></tr>
+<tr><td><code>example.org/path/*</code></td><td>Anything under that path</td></tr>
+</table>
+<p>You can also use regular expressions. Be aware that SEB for Windows uses the .NET regular-expression engine, which differs from some others in details, and SEB for Mac has its own implementation of the check that is close to the Windows one but not identical.</p>
+
+<h2>What a Moodle quiz usually needs</h2>
+<p>Moodle serves most of its own scripts, styles and files from the same address, so the Moodle host is usually enough. Things that commonly need extra entries:</p>
+<ul>
+<li><b>Sign-in.</b> Your university single sign-on, for example Microsoft (<a href="microsoft-sign-in-safe-exam-browser.html">see the Microsoft guide</a>), Shibboleth or SAML.</li>
+<li><b>Equations.</b> The MathJax filter loads from a content network by default in recent Moodle versions. Check the setting under Site administration, Plugins, Filters, MathJax. This only matters if you filter embedded content.</li>
+<li><b>Embedded media.</b> For example YouTube or Vimeo.</li>
+<li><b>Site add-ons.</b> Video platforms and similar tools your institution has installed.</li>
+<li><b>A download site.</b> If a question asks students to download a file from elsewhere, <a href="download-upload-files-safe-exam-browser.html">allow that site too</a>.</li>
+</ul>
+
+<h2>Find the exact list instead of guessing</h2>
+<p>Record a real session and let the tool list every site:</p>
+<ol>
+<li>Open the quiz in Chrome, Edge or Firefox and press F12. Open the Network tab and tick <i>Preserve log</i>.</li>
+<li>Go through the whole quiz, including login and any embedded content.</li>
+<li>Export the recording as a HAR file, or right-click the list and copy all the URLs.</li>
+<li>Drop the file into <i>Test the URL filter</i> in the <a href="../">builder</a>. It checks each address against your rules and offers an <i>Allow site</i> button for blocked hosts.</li>
+</ol>
+<p>The tool reads only the address, request type, time and status of each request. It ignores cookies and headers, and nothing is uploaded. A HAR file can contain login cookies, so do not share one.</p>
+<p>The matching code is a port of the filter in SEB for Windows and passes that project's own unit-test cases. Even so, test the finished file in real SEB.</p>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

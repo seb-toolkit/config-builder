@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secure exam environments: what SEB does and does not do</title>
+<meta name="description" content="A plain look at secure exam environments: what a lockdown browser like Safe Exam Browser can and cannot stop, what research says, and how to layer your approach.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/secure-exam-environments.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Secure exam environments: what Safe Exam Browser does and does not do">
+<meta property="og:description" content="A plain look at secure exam environments: what a lockdown browser like Safe Exam Browser can and cannot stop, what research says, and how to layer your approach.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/secure-exam-environments.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Secure exam environments: what Safe Exam Browser does and does not do", "description": "A plain look at secure exam environments: what a lockdown browser like Safe Exam Browser can and cannot stop, what research says, and how to layer your approach.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/secure-exam-environments.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "Secure exam environments: what Safe Exam Browser does and does not do", "item": "https://seb-toolkit.github.io/config-builder/guides/secure-exam-environments.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>Secure exam environments: what Safe Exam Browser does and does not do</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>A secure exam environment is whatever you set up so that students sit an exam under the conditions you intend: no extra help, no other people, no unplanned resources. A lockdown browser such as Safe Exam Browser (SEB) is one part of that. This guide explains what it does, where its limits are, and how the published evidence reads.</p>
+
+<h2>The layers of an exam environment</h2>
+<ol>
+<li><b>The device.</b> Managed lab computers you control, or students' own laptops (often called BYOD, bring your own device). Managed devices are much easier to secure.</li>
+<li><b>The browser.</b> A lockdown browser limits what the computer does during the exam: it can block other programs, copy and paste to other applications, screenshots and websites you have not allowed.</li>
+<li><b>The server.</b> The exam system can check that requests come from SEB with the right settings, using keys that SEB sends.</li>
+<li><b>The room or the people.</b> Invigilators in a room, remote proctoring, or neither.</li>
+<li><b>The assessment itself.</b> Question banks, randomised questions, time limits, questions that need reasoning rather than looking up, open-book design, or a short follow-up conversation with the student.</li>
+</ol>
+<p>Each layer reduces some risks and leaves others. The usual mistake is to rely on one layer, often the browser, for everything.</p>
+
+<h2>What a lockdown browser can reasonably do</h2>
+<ul>
+<li>Stop students switching to other programs or using the computer's other tools during the exam.</li>
+<li>Limit which websites can be opened, and control copy and paste, printing, downloads and uploads.</li>
+<li>Make casual cheating on the exam computer harder, and deliberate cheating more effortful.</li>
+</ul>
+
+<h2>What it cannot do</h2>
+<ul>
+<li><b>It cannot see or control a second device.</b> A phone or another laptop next to the exam computer is outside its reach. Published studies report staff and students raising exactly this point.</li>
+<li><b>It cannot stop help from another person</b> in the room or on a call.</li>
+<li><b>It cannot make an unmanaged computer fully trustworthy.</b> The software runs on a machine the student controls.</li>
+</ul>
+
+<h2>What the evidence says</h2>
+<p>Independent security research on SEB that I could find is limited, and much of it is a student thesis or a small case study. These are the sources I read, with what they actually show.</p>
+<ul>
+<li><b>A 2023 master's thesis at Chalmers University of Technology</b> (Cronqvist and Kortesaari, <i>Securing Electronic Exam Environments</i>) uses threat modelling and then analyses SEB in a case study. It reports several vulnerabilities and successful attacks, and says six of its eight proposed design principles were not followed by SEB. One finding matters if you use the Browser Exam Key or Config Key checks: the authors show that a student who has the settings file can work out the same keys, so a server that only checks those headers can be satisfied by something other than SEB. In their case study, the exam system only checked the browser's user-agent text, which is easier still to fake. It is a thesis, not a peer-reviewed paper, and it covers one exam set-up.</li>
+<li><b>CVE-2024-37742</b> is a published security record for SEB 3.5.0 on Windows. It describes access control that let clipboard data pass between the locked-down session and the computer underneath. Public records point to a proof of concept, and sources differ on which version fixed it, so use a current SEB release and check the official entry for the latest status.</li>
+<li><b>A 2022 case study in the journal JITEKI</b> (Mohammed and Ali, University of Mosul) ran a Moodle exam with and without SEB and observed what a student could open, using network and registry monitoring tools. It concludes that lockdown browsers help reduce cheating on the exam computer. It is a single small case study and does not measure actual cheating rates.</li>
+<li><b>A 2015 dissertation by Rosario Giustolisi</b> includes a chapter that analyses SEB version 2.0 and its certificate checks. It states that its threat model does not cover malicious candidates, so it is about other risks.</li>
+</ul>
+<p>Taken together: SEB raises the effort needed to cheat on the exam computer, and researchers have found ways around it in specific versions and set-ups. That is expected for software running on a computer the student controls. It is a reason to combine layers, not a reason to avoid them.</p>
+
+<h2>A sensible layered approach</h2>
+<ol>
+<li><b>Prefer managed computers</b> for high-stakes exams where you can. Use students' own devices for lower-stakes work.</li>
+<li><b>Keep SEB up to date</b> and set a minimum version for the quiz if your system allows it.</li>
+<li><b>Treat key checks as a speed bump</b>, not proof that the real SEB was used.</li>
+<li><b>Design questions that are harder to share or look up:</b> randomise, use banks, vary numbers, ask for reasoning or application.</li>
+<li><b>Add a human check where stakes are high:</b> an invigilator, or a short viva for a sample of students.</li>
+<li><b>Plan for failure.</b> Have a fallback if SEB will not start on a student's computer, and run a practice quiz first.</li>
+<li><b>Be open with students</b> about what SEB does and does not collect, and plan adjustments for students with access needs.</li>
+</ol>
+
+<h2>Where this tool fits</h2>
+<p>The <a href="../">SEB Config Builder</a> only makes the settings file. It cannot make a weak exam design strong. It aims to make the browser layer easier to set up correctly and to test. See the <a href="make-seb-config-file-moodle.html">step-by-step guide</a> to build a file.</p>
+
+<h2>Sources</h2>
+<ul>
+<li>Cronqvist, D. and Kortesaari, S. (2023). <a href="https://odr.chalmers.se/bitstreams/467893e1-9f9a-4e90-8548-f0932c0369c2/download"><i>Securing Electronic Exam Environments: Threats, mitigations, and design principles</i></a>. Master's thesis, Chalmers University of Technology and University of Gothenburg.</li>
+<li><a href="https://nvd.nist.gov/vuln/detail/CVE-2024-37742">CVE-2024-37742</a> in the US National Vulnerability Database.</li>
+<li>Mohammed, H. M. and Ali, Q. I. (2022). <a href="http://dx.doi.org/10.26555/jiteki.v8i4.25094">Cheating prevention in e-proctoring systems using secure exam browsers: a case study</a>. <i>JITEKI</i> 8(4), 634–648.</li>
+<li>Giustolisi, R. (2015). <a href="https://arxiv.org/abs/1512.04751"><i>Design and Analysis of Secure Exam Protocols</i></a>. arXiv:1512.04751.</li>
+<li>Schneider, D. R., Bauer, D., Lehre, M., Piendl, T. and Volk, B. (2012). The Safe Exam Browser: Innovative open source software for online examinations. 18th International Conference on Technology Supported Learning &amp; Training.</li>
+</ul>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

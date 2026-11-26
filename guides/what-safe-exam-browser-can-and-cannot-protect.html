@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Safe Exam Browser can and cannot protect</title>
+<meta name="description" content="A threat-by-threat look at what Safe Exam Browser stops, what it only makes harder and what it cannot touch, from other programs and websites to second devices and AI.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/what-safe-exam-browser-can-and-cannot-protect.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="What Safe Exam Browser can and cannot protect">
+<meta property="og:description" content="A threat-by-threat look at what Safe Exam Browser stops, what it only makes harder and what it cannot touch, from other programs and websites to second devices and AI.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/what-safe-exam-browser-can-and-cannot-protect.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "What Safe Exam Browser can and cannot protect", "description": "A threat-by-threat look at what Safe Exam Browser stops, what it only makes harder and what it cannot touch, from other programs and websites to second devices and AI.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/what-safe-exam-browser-can-and-cannot-protect.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "What Safe Exam Browser can and cannot protect", "item": "https://seb-toolkit.github.io/config-builder/guides/what-safe-exam-browser-can-and-cannot-protect.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>What Safe Exam Browser can and cannot protect</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>Staff are often asked “does SEB stop cheating?”. The honest answer depends on the threat. This guide goes through the common ones, grouped by how much SEB helps. For the wider picture, including the research, see <a href="secure-exam-environments.html">secure exam environments</a>.</p>
+<p class="callout"><b>Settings matter.</b> What SEB does depends on how the <code>.seb</code> file is configured and on the operating system. Test your own file (see <a href="test-run-safe-exam-browser-exam.html">how to do a test run</a>) rather than assuming.</p>
+
+<h2>What SEB is good at</h2>
+<table>
+<tr><th>Threat</th><th>What SEB does</th></tr>
+<tr><td>Student opens another program on the exam computer (notes, chat, a calculator you have not allowed)</td><td>Runs full screen and, with the usual settings, stops other programs being started or used. You can allow named programs.</td></tr>
+<tr><td>Student opens other websites in the same browser</td><td>The URL filter blocks pages that are not on your allow list. See <a href="seb-url-filter-moodle.html">the URL filter guide</a>.</td></tr>
+<tr><td>Copy and paste to or from other applications</td><td>Can be limited to inside the exam, or blocked.</td></tr>
+<tr><td>Screenshots, screen sharing and screen recording of the exam</td><td>Settings exist to block them (for example <code>allowScreenCapture</code> and <code>allowScreenSharing</code>). Check they behave as you expect on each operating system.</td></tr>
+<tr><td>Running the exam inside a virtual machine</td><td>Settings exist to refuse to start in one (<code>allowVirtualMachine</code>). A determined student may still get round this, so treat it as a hurdle.</td></tr>
+<tr><td>Printing, saving and sharing exam pages</td><td>Can be switched off.</td></tr>
+<tr><td>Students wandering off through the Moodle menus</td><td>Block the Moodle areas you do not want. See <a href="block-generative-ai-safe-exam-browser.html">keeping students inside the quiz</a>.</td></tr>
+</table>
+
+<h2>What SEB makes harder, but does not stop</h2>
+<table>
+<tr><th>Threat</th><th>Why it is only partly covered</th></tr>
+<tr><td>Altered or old copies of SEB</td><td>Moodle can check the keys that SEB sends, and you can set a minimum SEB version. But the keys are calculated from the settings file, so someone who has the file can in principle work them out. The keys raise the bar for casual attempts. They are not a strong guarantee. See <a href="secure-exam-environments.html">the research summary</a>.</td></tr>
+<tr><td>Students finding a way into blocked sites</td><td>A URL filter blocks by address. New AI sites, mirrors and proxies appear all the time, which is why an allow list is better than a block list.</td></tr>
+<tr><td>Sharing the quit password</td><td>A password given to the room can be passed on. Hand it out only as students finish, or use the quit-link route.</td></tr>
+<tr><td>Students on their own computers</td><td>You control what SEB does, not what is installed underneath. A managed lab computer is much easier to trust than a personal laptop.</td></tr>
+</table>
+
+<h2>What SEB cannot do</h2>
+<ul>
+<li><b>See or control a second device.</b> A phone, tablet or other laptop beside the exam computer is out of reach, including for AI assistants. This is the biggest gap.</li>
+<li><b>Stop help from another person</b> in the room, on a call or through a message.</li>
+<li><b>Know who is sitting the exam.</b> It does not check identity. Moodle sign-in, invigilators or proctoring must do that.</li>
+<li><b>Detect cheating by itself.</b> By default it does not record what a student types or sees. Logging student activity needs <a href="seb-server-logging-hosting-firewalls.html">SEB Server</a> and has privacy consequences.</li>
+<li><b>Fix a badly designed exam.</b> Questions that can be answered by lookup are the same questions under lockdown. <a href="secure-exam-environments.html">Assessment design</a> does more than any setting.</li>
+<li><b>Protect the exam outside SEB.</b> If the quiz can also be opened in a normal browser, it is not protected. Moodle’s SEB requirement is what enforces this. A hidden quiz alone does not.</li>
+</ul>
+
+<h2>A sensible way to use it</h2>
+<ol>
+<li>Use SEB for what it does well: close off the exam computer and the open web.</li>
+<li>Add the layers it cannot give you: invigilation or proctoring, randomised questions, time limits and questions that ask for reasoning.</li>
+<li>Tell students what is and is not allowed, and give them a way to ask for help. See the <a href="students.html">student guides</a>.</li>
+<li>Run a <a href="test-run-safe-exam-browser-exam.html">test run</a> on every type of computer before the real exam.</li>
+</ol>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="test-run-safe-exam-browser-exam.html">How to do a test run of your Safe Exam Browser exam</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to test a Safe Exam Browser exam before the real one</title>
+<meta name="description" content="A step-by-step test run for a Safe Exam Browser exam in Moodle: test as a student, try every computer type, check blocked and allowed sites, sign-in, quitting and what happens when things fail.">
+<link rel="canonical" href="https://seb-toolkit.github.io/config-builder/guides/test-run-safe-exam-browser-exam.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to do a test run of your Safe Exam Browser exam">
+<meta property="og:description" content="A step-by-step test run for a Safe Exam Browser exam in Moodle: test as a student, try every computer type, check blocked and allowed sites, sign-in, quitting and what happens when things fail.">
+<meta property="og:url" content="https://seb-toolkit.github.io/config-builder/guides/test-run-safe-exam-browser-exam.html">
+<meta property="og:site_name" content="SEB Config Builder">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="guides.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "How to do a test run of your Safe Exam Browser exam", "description": "A step-by-step test run for a Safe Exam Browser exam in Moodle: test as a student, try every computer type, check blocked and allowed sites, sign-in, quitting and what happens when things fail.", "datePublished": "2026-11-26", "dateModified": "2026-11-26", "inLanguage": "en-GB", "mainEntityOfPage": "https://seb-toolkit.github.io/config-builder/guides/test-run-safe-exam-browser-exam.html", "author": {"@type": "Organization", "name": "SEB Config Builder"}, "publisher": {"@type": "Organization", "name": "SEB Config Builder"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SEB Config Builder", "item": "https://seb-toolkit.github.io/config-builder/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://seb-toolkit.github.io/config-builder/guides/"}, {"@type": "ListItem", "position": 3, "name": "How to do a test run of your Safe Exam Browser exam", "item": "https://seb-toolkit.github.io/config-builder/guides/test-run-safe-exam-browser-exam.html"}]}</script>
+</head>
+<body>
+<header class="site"><a class="brand" href="../">SEB Config Builder</a><nav><a href="./">Guides</a><a href="students.html">For students</a><a href="staff.html">For staff</a><a href="../">Open the builder</a></nav></header>
+<main>
+<article>
+<h1>How to do a test run of your Safe Exam Browser exam</h1>
+<p class="meta">Published 2026-11-26 · Unofficial guide</p>
+
+<p>The best protection against exam-day problems is a proper rehearsal. This guide describes a test run for a Moodle quiz in Safe Exam Browser (SEB). Allow a few days for it, so you can fix what you find.</p>
+
+<h2>1. Test as a student, not as a teacher</h2>
+<p>This is the step people miss. In Moodle, teachers and managers usually have a permission that lets them bypass the Safe Exam Browser requirement, so a quiz that opens fine for you in a normal browser may be locked to everyone else. Check this on your own installation, then:</p>
+<ul>
+<li>Make a <b>test student account</b>, enrol it in the course and use it for every test. A separate, real test account is the most reliable way to see what students see.</li>
+<li>Use a <b>copy of the quiz</b> with the same settings, in a test course or with access limited to your test users, so real students do not see it.</li>
+</ul>
+
+<h2>2. Cover every kind of computer</h2>
+<p>Try the exam on each combination students will use, and record the result for each.</p>
+<table>
+<tr><th>Computer</th><th>Check</th></tr>
+<tr><td>A lab or cluster computer</td><td>SEB installed, correct version, launches from the quiz page.</td></tr>
+<tr><td>Windows laptop (BYOD)</td><td>Fresh install of the current SEB; Windows Hello or phone sign-in if used.</td></tr>
+<tr><td>Mac</td><td>SEB in the Applications folder; sign-in method that works on a Mac.</td></tr>
+<tr><td>iPad, if allowed</td><td>The App Store version; settings that apply only to some systems.</td></tr>
+<tr><td>A computer with the quirks you expect</td><td>Two screens, a managed laptop with a firewall or proxy, a slow connection.</td></tr>
+</table>
+
+<h2>3. The checklist for each test</h2>
+<ol>
+<li><b>Start.</b> The quiz launches from the <i>Launch Safe Exam Browser</i> button. Opening the quiz in a normal browser is refused.</li>
+<li><b>Sign in.</b> The method students will really use works, including the phone approval prompt. See <a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in in SEB</a>.</li>
+<li><b>Allowed.</b> Everything the exam needs works: question types, images, embedded video, equation tools, file uploads, any other site you allowed.</li>
+<li><b>Blocked.</b> Pages you meant to block are blocked: another website, the Moodle dashboard and menu, a link inside a question. Try the address bar if you enabled one. Use the <a href="../#test">website test in the builder</a> to check a list of addresses.</li>
+<li><b>Windows.</b> The quiz stays in one window, and a link that asks for a new window does not escape your rules. Check the quiz's Moodle browser security is <i>None</i>.</li>
+<li><b>Programs and keyboard.</b> Another application cannot be opened, and copy and paste behaves as you set it.</li>
+<li><b>Downloads and uploads.</b> Where files go, and whether a student can find them to upload. See <a href="download-upload-files-safe-exam-browser.html">downloads and uploads</a>.</li>
+<li><b>Finish and quit.</b> Submit, then leave by your intended route: quit password, <i>Exit Safe Exam Browser</i> button or quit link. Check that quitting during the attempt is not possible if you do not want it to be.</li>
+<li><b>Review.</b> Look at the attempt as a teacher: answers saved, time recorded, anything strange in the logs.</li>
+</ol>
+
+<h2>4. Try the things that go wrong</h2>
+<ul>
+<li><b>Network drops.</b> Turn Wi-Fi off for 30 seconds, then on. Does the quiz recover, and are answers kept?</li>
+<li><b>Restart.</b> Close SEB mid-attempt and re-launch from Moodle. Does the attempt continue, and what happens to the timer?</li>
+<li><b>Wrong or old SEB.</b> Install an older version or open the quiz with a different browser. Is the message clear, and does your server refuse it?</li>
+<li><b>Closed programs.</b> Start with screen sharing or a restricted program running. What does a student see?</li>
+<li><b>Accessibility.</b> Try the tools your students use (screen reader, magnification, extra time). Some assistive tools conflict with lockdown, so find out in advance.</li>
+</ul>
+
+<h2>5. Pilot with a few real students</h2>
+<p>A practice quiz in SEB, taken by real students on their own computers about a week before the exam, finds problems that you cannot. Ask them to report their computer type, the SEB version and anything odd. Give them the <a href="students.html">student guides</a> and the <a href="student-seb-exam-checklist.html">student checklist</a>.</p>
+
+<h2>6. Rehearse the room</h2>
+<ul>
+<li>Run through the invigilator sheet (the builder makes one) with the people who will use it.</li>
+<li>Know who handles a student who cannot start, and what the options are: another computer, another room, or an alternative arrangement.</li>
+<li>Decide in advance how the clock is handled when something fails.</li>
+</ul>
+
+<h2>7. Go or no-go, and freeze</h2>
+<ul>
+<li>Note the SEB versions you tested and the <code>.seb</code> file you used. Keep a copy.</li>
+<li><b>Freeze the settings</b> a day or two before. A change after testing is an untested change.</li>
+<li>If a core test failed on a main computer type, fix it or use another route. Do not hope it works on the day.</li>
+<li>Keep a plan B: a spare computer, a paper copy or a second room.</li>
+</ul>
+
+<p>Related: <a href="what-safe-exam-browser-can-and-cannot-protect.html">what SEB can and cannot protect</a>, and <a href="make-seb-config-file-moodle.html">making the settings file</a>.</p>
+
+<div class="cta"><b>Set this up without the guesswork.</b><br>The builder asks plain questions and gives you a ready-to-upload <code>.seb</code> file, and printable information sheets for students and invigilators. It runs in your browser; nothing is uploaded.<br><a class="button" href="../">Open the builder</a></div>
+<h2>More guides</h2>
+<ul><li><a href="make-seb-config-file-moodle.html">How to make a Safe Exam Browser (.seb) file for a Moodle quiz</a></li><li><a href="seb-url-filter-moodle.html">Safe Exam Browser URL filter for Moodle: what to allow and how to test it</a></li><li><a href="microsoft-sign-in-safe-exam-browser.html">Microsoft sign-in, two-step verification and passkeys in Safe Exam Browser (2026)</a></li><li><a href="download-upload-files-safe-exam-browser.html">Downloading and uploading files in Safe Exam Browser: where files go</a></li><li><a href="secure-exam-environments.html">Secure exam environments: what Safe Exam Browser does and does not do</a></li><li><a href="block-generative-ai-safe-exam-browser.html">Preventing access to generative AI in Safe Exam Browser</a></li><li><a href="seb-server-logging-hosting-firewalls.html">SEB Server: logging student activity, where to host it, and what happens behind a firewall</a></li><li><a href="what-safe-exam-browser-can-and-cannot-protect.html">What Safe Exam Browser can and cannot protect</a></li><li><a href="download-staff.html">Downloads for staff: Safe Exam Browser, SEB Server and tools</a></li><li><a href="one-student-cannot-use-safe-exam-browser.html">When one student cannot use Safe Exam Browser: what the invigilator can do</a></li><li><a href="straight-into-moodle-quiz-safe-exam-browser.html">Taking students straight into the Moodle quiz in Safe Exam Browser, with no site menus</a></li></ul>
+<p class="notice">This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p>
+</article>
+</main>
+<footer class="site"><p>This is an independent tool and guide. It is not made, endorsed or supported by the Safe Exam Browser project, ETH Zürich or the SEB Alliance. Official information is at <a href="https://safeexambrowser.org">safeexambrowser.org</a>.</p><p><a href="https://github.com/seb-toolkit/config-builder">Source code on GitHub</a></p></footer>
+</body>
+</html>
